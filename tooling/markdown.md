@@ -1,6 +1,5 @@
 # Markdown Guide
 
-**For:** `learning-notes/` repo — reference throughout the 111-Saturday plan  
 **Sources:**
 - [markdowntutorial.com](https://www.markdowntutorial.com/) — interactive 10-minute tutorial (do this first on Saturday 1)
 - [markdownguide.org](https://www.markdownguide.org/) — full reference (basic + extended syntax)
