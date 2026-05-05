@@ -917,6 +917,8 @@ Every heading automatically gets an **ID** based on its text. You can link to th
 
 So `## Bold, Italic, and Combined Emphasis` becomes `#bold-italic-and-combined-emphasis`.
 
+The `#` tells Markdown (and browsers) that you're linking to a fragment identifier, i.e., a specific section within the same page, not a different page.
+
 ### Linking to a heading in the same file
 
 **Source:**
