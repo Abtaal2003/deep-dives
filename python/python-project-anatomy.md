@@ -488,10 +488,39 @@ OPENAI_API_KEY=
 
 A new contributor copies `.env.example` to `.env` and fills in real values.
 
+### config.py: centralizing configuration
+
+Reading `os.environ[...]` directly all over the codebase scatters configuration and makes it hard to see what a project actually needs. A common pattern is a dedicated `config.py` module that loads the environment once and exposes the values as a single, importable object:
+
+```python
+# config.py
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Config:
+    SECRET_KEY = os.environ["SECRET_KEY"]                       # required: error if missing
+    DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///dev.db")  # optional: default provided
+    DEBUG = os.environ.get("DEBUG", "false").lower() == "true"  # parse string to bool
+```
+
+The rest of the app then imports the config instead of touching the environment directly:
+
+```python
+from config import Config
+print(Config.DATABASE_URL)
+```
+
+This gives you one place that defines every setting, sensible defaults for optional values, and a single point where a missing required variable fails loudly and early. Note the two access styles: `os.environ["KEY"]` raises an error if the variable is absent (use it for things the app cannot run without), while `os.environ.get("KEY", default)` returns a fallback (use it for optional settings).
+
+Web frameworks have first-class support for this pattern. Flask, for example, loads a config object with `app.config.from_object(Config)`, and larger projects often define several classes (`DevelopmentConfig`, `ProductionConfig`) selected by an environment variable. The `.env` file still supplies the raw values; `config.py` is the structured layer your code reads from.
+
 **Notes:**
 - `.env` holds configuration and secrets, never packages. It has nothing to do with dependency management; it is unrelated to `requirements.txt`.
 - Never commit `.env`. Committing a secret means rotating it, since it lives forever in Git history. Commit `.env.example` instead.
-- Code should read from `os.environ`, not from the file directly. The file is just a loader for the environment.
+- Code should read from `os.environ` (or a `config.py` that wraps it), not from the file directly. The file is just a loader for the environment.
+- `config.py` is committed; it should contain no secret values, only the code that reads them from the environment. The secrets stay in `.env`.
 - A leaked API key in a public repository is one of the most common and costly beginner mistakes. The `.gitignore` entry for `.env` is what prevents it.
 
 ---
