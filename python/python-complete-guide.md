@@ -1575,7 +1575,7 @@ print(d.name, d.breed)             # Rex Labrador
 print(isinstance(d, Animal))       # True            a Dog is an Animal
 ```
 
-`super()` is how a subclass calls the parent's version of a method, most often in `__init__` to let the parent set up its part before the child adds more. Calling `super().__init__(...)` rather than `Animal.__init__(self, ...)` is preferred because it cooperates correctly with multiple inheritance.
+In single inheritance you can read `super()` as "call the parent's version of this method", used most often in `__init__` to let the parent set up its part before the child adds more. Calling `super().__init__(...)` rather than `Animal.__init__(self, ...)` is preferred because it cooperates correctly with multiple inheritance; what `super()` really means is subtler, and the multiple-inheritance discussion below shows it.
 
 **Polymorphism** is the payoff — code written against the parent interface works on any subclass. The same `speak()` call dispatches to the right override depending on the actual object.
 
@@ -1588,7 +1588,7 @@ for animal in [Dog("Rex", "Lab"), Cat("Tom")]:
     print(animal.speak())          # Rex barks / Tom meows   same call, different behavior
 ```
 
-With **multiple inheritance**, a class has several parents, and Python needs a deterministic order to look up methods. That order is the **Method Resolution Order (MRO)**, computed by the C3 linearization algorithm. You can inspect it, and it explains exactly which method wins in a diamond hierarchy.
+With **multiple inheritance**, a class has several parents, and Python needs a deterministic order to look up methods. That order is the **Method Resolution Order (MRO)**, computed by the C3 linearization algorithm. You can inspect it on any class, and it explains exactly which method wins in a diamond hierarchy — the classic case where two parents share a grandparent.
 
 ```python
 class A:
@@ -1605,12 +1605,74 @@ print([cls.__name__ for cls in D.__mro__])
 # ['D', 'B', 'C', 'A', 'object']
 ```
 
-The MRO reads left to right across parents, but never places a parent before its own child, and every class ultimately inherits from `object`, the root of all Python classes.
+The MRO reads left to right across parents, never places a class before its own subclass, and ends at `object`, the root of all Python classes. `Class.__mro__` is the practical tool: whenever you are unsure which method a call will hit, print it and read left to right. The first class in that list that defines the method wins.
+
+**What `super()` really means.** The simple model, "call my parent's version", is accurate in single inheritance but it is not what `super()` actually does. `super()` means *the next class after me in the MRO of the object being handled*, and that is decided at runtime by the object's class, not when the code is written. The consequence is surprising the first time you see it:
+
+```python
+class A:
+    def __init__(self):
+        print("A")
+
+class B(A):
+    def __init__(self):
+        print("B")
+        super().__init__()
+
+class C(A):
+    def __init__(self):
+        print("C")
+        super().__init__()
+
+class D(B, C):
+    def __init__(self):
+        print("D")
+        super().__init__()
+
+D()                    # prints D B C A   one chain through the MRO
+B()                    # prints B A       same line in B, different target
+```
+
+Inside `B.__init__`, the call `super().__init__()` reached **C**, a sibling that `B` knows nothing about. When the object is a `D`, the MRO is `[D, B, C, A, object]`, so "next after B" is `C`. When the object is a plain `B`, the MRO is `[B, A, object]`, and the very same line calls `A`. One line of code, two different targets, resolved per object.
+
+**Why it is designed this way.** In a diamond, if `B` and `C` each hardcoded `A.__init__(self)`, constructing a `D` would run `A.__init__` twice. With `super()`, the calls form a single chain that walks the MRO once, so every class initializes exactly once, in a consistent order. This pattern is called **cooperative multiple inheritance**, and it comes with a rule: if any class in a hierarchy uses `super()`, all of them should. Cooperative `__init__` methods conventionally accept `**kwargs` and pass them along, so arguments can flow through classes that do not recognize them:
+
+```python
+class Named:
+    def __init__(self, name, **kwargs):
+        self.name = name
+        super().__init__(**kwargs)     # hand off to whoever is next
+
+class Aged:
+    def __init__(self, age, **kwargs):
+        self.age = age
+        super().__init__(**kwargs)
+
+class Person(Named, Aged):
+    pass
+
+p = Person(name="Ada", age=36)     # each __init__ runs exactly once
+print(p.name, p.age)               # Ada 36
+```
+
+Finally, not every hierarchy is even legal. If the bases are ordered so that C3 cannot honor both of its promises (left to right, and subclass before superclass), Python refuses to create the class at all:
+
+```python
+class X: pass
+class Y(X): pass
+class Z(X, Y): pass
+# TypeError: Cannot create a consistent method resolution order (MRO) for bases X, Y
+```
+
+`Z` asks for `X` before `Y`, but `Y` is a subclass of `X` and must come first. The two demands contradict, so C3 fails loudly at class definition time instead of guessing.
 
 **Notes:**
-- `super().__init__(...)` calls the parent initializer and is preferred over naming the parent class directly, because it follows the MRO and works under multiple inheritance.
+- `super().__init__(...)` calls the next initializer in the MRO and is preferred over naming the parent class directly, because it works under multiple inheritance without double-running anything.
 - Polymorphism means the same method call behaves correctly across subclasses. This is what lets you write general code (`for a in animals: a.speak()`).
-- The MRO (`Class.__mro__`) is the deterministic lookup order for methods. In a diamond like `D(B, C)`, `B` is consulted before `C`, and `object` is always last.
+- The MRO (`Class.__mro__`) is the deterministic lookup order for methods, computed by C3 linearization. In a diamond like `D(B, C)`, `B` is consulted before `C`, and `object` is always last. Print it whenever method resolution is unclear.
+- `super()` does not mean "my parent" — it means the next class in the runtime object's MRO. In a diamond, `super()` inside `B` can dispatch to `B`'s sibling `C`.
+- Cooperative hierarchies use `super()` everywhere and pass `**kwargs` through the chain, so each class runs exactly once. Mixing `super()` with hardcoded parent calls breaks the chain.
+- An impossible base ordering raises `TypeError: Cannot create a consistent method resolution order` the moment the class is defined.
 - Favor composition over deep inheritance when a relationship is "has-a" rather than "is-a". Tall inheritance trees become hard to follow and to change.
 
 ---
