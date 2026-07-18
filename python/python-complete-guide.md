@@ -2101,6 +2101,8 @@ scores: dict[str, float] = {"Ada": 0.9}
 print(greet("Ada", 2))     # hi Ada hi Ada
 ```
 
+The `->` in a signature introduces the **return type annotation**: `def greet(...) -> str:` declares that `greet` returns a `str`, just as `name: str` declares the parameter's type. The arrow is only readable syntax that Python itself doesn't enforce, but frameworks such as FastAPI and libraries like pydantic read these annotations at runtime and build real behavior (request parsing, validation, docs) from them.
+
 Since Python 3.9 you write the built-in generics directly (`list[int]`, `dict[str, int]`, `tuple[int, ...]`) with no imports. The `typing` module supplies the rest. `Optional[X]` means "X or None" and `X | Y` (3.10+) is the modern union syntax. `Any` opts out of checking for a value.
 
 ```python
