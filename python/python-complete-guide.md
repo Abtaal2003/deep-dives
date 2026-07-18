@@ -1575,7 +1575,7 @@ print(d.name, d.breed)             # Rex Labrador
 print(isinstance(d, Animal))       # True            a Dog is an Animal
 ```
 
-In single inheritance you can read `super()` as "call the parent's version of this method", used most often in `__init__` to let the parent set up its part before the child adds more. Calling `super().__init__(...)` rather than `Animal.__init__(self, ...)` is preferred because it cooperates correctly with multiple inheritance; what `super()` really means is subtler, and the multiple-inheritance discussion below shows it.
+In single inheritance you can read `super()` as "call the parent's version of this method", used most often in `__init__` to let the parent set up its part before the child adds more. Note that `self` inside the parent's `__init__` is the same object the child is initializing — both initializers write into one attribute namespace, so if parent and child assign the same attribute, whichever assignment runs last wins (with the parent-first `super().__init__()` pattern, that is the child's). Calling `super().__init__(...)` rather than `Animal.__init__(self, ...)` is preferred because it cooperates correctly with multiple inheritance; what `super()` really means is subtler, and the multiple-inheritance discussion below shows it.
 
 **Polymorphism** is the payoff — code written against the parent interface works on any subclass. The same `speak()` call dispatches to the right override depending on the actual object.
 
