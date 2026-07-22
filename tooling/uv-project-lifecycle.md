@@ -564,7 +564,7 @@ uv sync --locked    # fail if uv.lock is out of date with pyproject.toml
 uv sync --frozen    # install straight from uv.lock without re-resolving
 ```
 
-Plain `uv sync` quietly re-locks when it finds the lockfile has drifted from the recipe — helpful on your own machine, dangerous in a pipeline. Use `--locked` in CI, where drift should break the build loudly instead of being silently repaired. The two flags are mutually exclusive; passing both is an error, because "check the lockfile" and "do not check the lockfile" cannot both be true.
+Plain `uv sync` quietly re-locks when it finds the lockfile has drifted from the recipe — helpful on your own machine, dangerous in a pipeline. Use `--locked` in CI, where drift should break the build loudly instead of being silently repaired. `--frozen` is the weaker guarantee of the two: it skips the up-to-date check entirely and installs whatever the lockfile says, which is what you want when the lockfile is already known good and you would rather not pay for or risk the comparison. The two flags are mutually exclusive; passing both is an error, because "check the lockfile" and "do not check the lockfile" cannot both be true.
 
 ### When the clone is missing pieces
 
@@ -590,7 +590,9 @@ Two project commands sit behind reproducibility, and they do different jobs:
 - **`uv lock`** resolves your dependencies and writes `uv.lock`. It updates the *record* of exact versions but does not change your installed environment. Run it to refresh the lockfile (for example after editing constraints in `pyproject.toml`) without reinstalling anything yet.
 - **`uv sync`** makes the `.venv` match `uv.lock`. It installs what is missing and removes what should not be there, so the environment exactly equals the locked record. Run it to build or update the environment.
 
-In practice you rarely call `uv lock` on its own, because the commands that change dependencies lock implicitly: `uv add` updates the lockfile as it adds, and `uv sync` re-locks if the recipe changed. `uv lock` is the explicit, environment-free way to re-resolve, useful in CI or when you want to review a lockfile change as a separate step before installing. A one-line way to hold them apart: `uv lock` decides what should be installed, and `uv sync` makes it so.
+There is an asymmetry here worth knowing. `uv sync` syncs *exactly* by default, removing anything the lockfile does not list, while `uv run` syncs *inexactly*, installing what is required but leaving strays alone. So a package that survives repeated `uv run` invocations can vanish the moment you run `uv sync`. `--inexact` and `--exact` swap the behaviors if you need the other one.
+
+In practice you rarely call `uv lock` on its own, because the commands that change dependencies lock implicitly: `uv add` updates the lockfile as it adds, and `uv sync` re-locks if the recipe changed. `uv lock` is the explicit, environment-free way to re-resolve, useful in CI or when you want to review a lockfile change as a separate step before installing. Its verification form is `uv lock --check`, which reports whether the lockfile is current without touching either the lockfile or an environment; it is the same assertion `--locked` makes on other commands, available on its own when there is nothing to install. A one-line way to hold them apart: `uv lock` decides what should be installed, and `uv sync` makes it so.
 
 **Updating to newer versions.** uv never upgrades on its own; it does not treat the lockfile as stale when new releases appear, so upgrades are always explicit. The upgrade flags do it:
 
@@ -876,7 +878,7 @@ Treat the result as a build artifact. `pyproject.toml` and `uv.lock` stay author
 uv keeps `uv.lock` for project work, because some of what it records cannot be expressed in the standard format, but it treats `pylock.toml` as a first-class export and install target:
 
 ```bash
-uv export -o pylock.toml                          # from a uv.lock
+uv export --format pylock.toml                    # from a uv.lock
 uv pip compile requirements.in -o pylock.toml     # from loose requirements
 uv pip sync pylock.toml                           # install from one
 ```
