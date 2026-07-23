@@ -1,6 +1,6 @@
 # Python, The Complete Language Guide
 
-A thorough, interview-ready tour of the Python language itself: how it runs, every built-in data type and the methods that come with it, control flow, functions, object-oriented programming, errors, modules, and the deeper mechanics (identity, mutability, the GIL) that interviewers probe. Every concept is paired with a runnable example and its real output, so nothing is left abstract. The focus is the language, not algorithms: data structures and algorithms get their own companion guide.
+A thorough, interview-ready tour of the Python language itself: how it runs, every built-in data type and the methods that come with it, control flow, functions, object-oriented programming, errors, modules, concurrency, and the deeper mechanics (identity, mutability, the GIL) that interviewers probe. Every concept is paired with a runnable example and its real output, so nothing is left abstract. The focus is the language, not algorithms: data structures and algorithms get their own companion guide.
 
 The examples target **Python 3.14** (the current stable series, 3.14.6 as of mid-2026), but everything here works on 3.10+ unless a version is called out. Where a feature is newer, that is flagged inline.
 
@@ -17,11 +17,11 @@ The examples target **Python 3.14** (the current stable series, 3.14.6 as of mid
 
 ## How to read this guide
 
-The sections move from the ground up: first how Python runs and how its objects work, then each data type in turn, then the constructs that combine them (control flow, functions, classes), then the parts that make programs robust (errors, files, modules, types), and finally a set of interview deep-dives into the mechanics behind common questions. The last three sections are pure reference: Common Mistakes, a rapid-fire interview Q&A, and a Cheat Sheet.
+The sections move from the ground up: first how Python runs and how its objects work, then each data type in turn, then the constructs that combine them (control flow, functions, classes), then the parts that make programs robust (errors, files, modules, types), and finally a set of interview deep-dives into the mechanics behind common questions. The last four sections are pure reference: Common Mistakes, a rapid-fire interview Q&A, a Cheat Sheet, and a table of every keyword in the language.
 
 Two mental models recur and are worth holding from the start. First, **everything in Python is an object**, including numbers, functions, and classes themselves, so the same rules about identity and references apply everywhere. Second, **a variable is a name bound to an object, not a box holding a value**, which is the single idea behind most of the "why did my list change?" surprises later in the guide.
 
-Each section ends with a short **Notes** list of the things that trip people up or that interviewers like to ask about.
+Each section ends with a short **Notes** list of the things that trip people up or that interviewers like to ask about. The three pure-list reference sections (Common Mistakes, Interview Quick-Fire, and the Cheat Sheet) are the exception, since every line in them is already a note.
 
 ---
 
@@ -74,12 +74,14 @@ Each section ends with a short **Notes** list of the things that trip people up 
 **Interview Deep-Dives**
 - [33. Mutability, Identity, and Copying](#33-mutability-identity-and-copying)
 - [34. How Python Executes: CPython, Bytecode, the GIL](#34-how-python-executes-cpython-bytecode-the-gil)
-- [35. Memory, Iteration, and Performance Habits](#35-memory-iteration-and-performance-habits)
+- [35. Async and Await](#35-async-and-await)
+- [36. Memory, Iteration, and Performance Habits](#36-memory-iteration-and-performance-habits)
 
 **Reference**
-- [36. Common Mistakes](#36-common-mistakes)
-- [37. Interview Quick-Fire](#37-interview-quick-fire)
-- [38. Cheat Sheet](#38-cheat-sheet)
+- [37. Common Mistakes](#37-common-mistakes)
+- [38. Interview Quick-Fire](#38-interview-quick-fire)
+- [39. Cheat Sheet](#39-cheat-sheet)
+- [40. Keyword Reference](#40-keyword-reference)
 
 ---
 
@@ -166,7 +168,7 @@ print("# this is not a comment")   # # this is not a comment
 **Notes:**
 - Comments use `#` to the end of the line; there is no block-comment syntax, so stack `#` lines. A `#` inside a string literal is ordinary text.
 - The REPL echoes expression results; a script does not. This is why beginners think a script "did nothing" when it computed plenty but printed nothing.
-- `input` returns a string even when the user types digits. Forgetting to convert is a frequent off-by-one-type bug.
+- `input` returns a string even when the user types digits. Forgetting to convert is a frequent beginner bug, and it fails later than you expect: `"5" * 3` is valid Python, it just gives `"555"`.
 - In the REPL, the special variable `_` holds the last result, handy for quick chaining.
 
 ---
@@ -262,11 +264,30 @@ print(a, b)        # 6 5
 
 With mutable objects, an in-place change is visible through every name bound to that object, which is the behavior the list example above showed. Section 33 returns to this with copying and function-argument behavior — the places it matters most.
 
+The `del` statement is the exact inverse of binding. It removes a **name** from its namespace rather than destroying the object, so the object survives for as long as any other name still refers to it. A second, unrelated use of the same keyword deletes an item out of a container:
+
+```python
+a = [1, 2, 3]
+b = a
+del a              # unbinds the NAME a; the list itself lives on through b
+print(b)           # [1, 2, 3]
+# print(a)         # NameError: name 'a' is not defined
+
+nums = [10, 20, 30]
+del nums[0]        # delete by index
+print(nums)        # [20, 30]
+
+d = {"x": 1, "y": 2}
+del d["x"]         # delete a key
+print(d)           # {'y': 2}
+```
+
 **Notes:**
 - `=` binds a name; it never copies. Two names can refer to one object, and a mutable object changed through one name is changed for all of them.
 - `is` compares identity (same object), `==` compares value (equal contents). Use `==` for comparisons and reserve `is` for `None` (`if x is None`) and other singletons.
 - Immutable does not mean "constant variable". You can always rebind the name; you just cannot mutate the object the name points to.
 - CPython caches small integers (roughly -5 to 256) and interns some short strings, so `is` may surprise you by returning `True` for small numbers. Never rely on that; it is an implementation detail, not a language guarantee.
+- `del name` unbinds a name and does not free memory directly; the object is reclaimed only once its last reference disappears. `del container[key]` is a separate, container-level operation that shares the keyword.
 
 ---
 
@@ -274,7 +295,7 @@ With mutable objects, an in-place change is visible through every name bound to 
 
 Python has three numeric types plus a boolean type that is technically a number.
 
-**`int`** is a whole number of *unbounded* size: Python integers never overflow, growing as large as memory allows. **`float`** is a 64-bit double-precision decimal, the same IEEE 754 format used everywhere, which means it carries the usual floating-point rounding quirks. **`complex`** has a real and imaginary part written with `j`. **`bool`** is a subclass of `int`, so `True` equals `1` and `False` equals `0` — and they can be used in arithmetic.
+**`int`** is a whole number of *unbounded* size: Python integers never overflow, growing as large as memory allows. **`float`** is a 64-bit double-precision *binary* floating-point number, the IEEE 754 format used almost everywhere. Binary is the operative word: values like `0.1` have no exact binary representation, which is the source of the rounding quirks below. **`complex`** has a real and imaginary part written with `j`. **`bool`** is a subclass of `int`, so `True` equals `1` and `False` equals `0` — and they can be used in arithmetic.
 
 ```python
 big = 2 ** 100
@@ -394,7 +415,7 @@ print("file.py".endswith(".py"))        # True
 print("hello".replace("l", "L"))        # heLLo
 ```
 
-Because strings are immutable, building a long string by repeated `+=` in a loop is wasteful — each step creates a new string. The idiom is to collect parts in a list and `join` once.
+Because strings are immutable, `s += piece` conceptually builds a new string every step. CPython hides much of that cost with an in-place resize when the string has only one reference, but that optimization is fragile and implementation-specific, so the durable idiom is to collect the parts in a list and `join` once (Section 37 has the measurements).
 
 ```python
 parts = []
@@ -405,9 +426,9 @@ print("".join(parts))     # 012   one allocation instead of many
 
 **Notes:**
 - Strings are immutable. `s.upper()` returns a new string; it does not modify `s`. Forgetting this ("I called `.strip()` but the string still has spaces") is extremely common: you must assign the result back.
-- Prefer f-strings over older `%` formatting and `str.format()`. They are faster and far more readable.
+- Prefer f-strings over older `%` formatting and `str.format()`. They are far more readable and generally the fastest of the three, though the margin over `%` is small and depends on the case.
 - `find` returns `-1` when the substring is absent; `index` raises `ValueError`. Choose based on whether "not found" is normal or exceptional.
-- Build large strings with `"".join(list_of_parts)`, not repeated `+=`, to avoid quadratic copying.
+- Build large strings with `"".join(list_of_parts)` rather than repeated `+=`. The `join` version is faster and its performance does not depend on a CPython optimization that can silently stop applying.
 - `split()` with no argument splits on any run of whitespace and drops empties, which differs from `split(" ")`.
 
 ---
@@ -800,7 +821,56 @@ print(3 in [1, 2, 3])          # True
 print("name" in {"name": "x"}) # True   checks dict KEYS
 ```
 
-**Assignment shortcuts:** `+=`, `-=`, `*=`, and so on apply an operation in place. For mutable objects like lists, `+=` mutates the existing object, while `=` with `+` would rebind — a subtle difference Section 33 revisits.
+**Bitwise:** `&` (and), `|` (or), `^` (exclusive or), `~` (invert), `<<` (left shift), and `>>` (right shift) work on the individual bits of an integer. They show up in permission masks, flag sets, hashing, and protocol parsing, and the shifts are quick multiplication and division by powers of two:
+
+```python
+print(5 & 3, 5 | 3, 5 ^ 3)     # 1 7 6       0b101 against 0b011
+print(bin(5 & 3), bin(5 | 3))  # 0b1 0b111
+print(~5)                      # -6          inverts every bit; ~n is always -(n + 1)
+print(5 << 1, 5 >> 1)          # 10 2        double and halve
+
+READ, WRITE, EXEC = 0b100, 0b010, 0b001
+flags = READ | WRITE                          # combine two flags into one int
+print(bin(flags))                             # 0b110
+print(bool(flags & READ), bool(flags & EXEC)) # True False   test whether a flag is set
+```
+
+Those three symbols are heavily overloaded: `&`, `|`, and `^` are bit operations on integers, set algebra on sets (Section 9), and `|` additionally merges dictionaries (Section 10). Same operator, completely different meaning per type — which is exactly what `__and__` and friends from Section 27 make possible.
+
+**Augmented assignment:** every binary operator has a compound form that reads the name, applies the operator, and stores the result back under the same name. There are thirteen of them, one for each binary operator:
+
+| Family | Operators |
+| :--- | :--- |
+| arithmetic | `+=`, `-=`, `*=`, `/=`, `//=`, `%=`, `**=` |
+| bitwise | `&=`, `\|=`, `^=`, `<<=`, `>>=` |
+| matrix multiply | `@=` (used by NumPy and friends, not by built-in types) |
+
+`x += 1` is shorthand for `x = x + 1`, and for immutable types that is exactly what happens — a new object is built and the name is rebound. The common description "it modifies the value in place" is only half true, and the half that is false causes real bugs. What Python actually does is try the in-place hook (`__iadd__`) first, and fall back to plain `__add__` plus a rebind when the type does not provide one. Mutable containers implement the hook; numbers and strings do not:
+
+```python
+n = 5
+before = id(n)
+n += 1
+print(id(n) == before)    # False   ints are immutable: a NEW object, rebound
+
+nums = [1, 2]
+before = id(nums)
+nums += [3]
+print(id(nums) == before) # True    lists mutate in place via __iadd__
+```
+
+That difference is invisible until a second name shares the object, which is where Section 33 picks the thread up. It also produces one of Python's strangest error messages. Augmented assignment on a tuple element mutates the list *and then* fails to store it back:
+
+```python
+t = ([1, 2], "x")
+try:
+    t[0] += [3]           # list is extended, then Python tries t[0] = <list>
+except TypeError as e:
+    print(e)              # 'tuple' object does not support item assignment
+print(t)                  # ([1, 2, 3], 'x')   the mutation happened anyway
+```
+
+Both halves are working as designed: `__iadd__` extended the list, then the assignment back into the immutable tuple was rejected. Finally, augmented assignment is a **statement**, not an expression, so it has no value and cannot appear inside a larger expression — that job belongs to the walrus operator below.
 
 **The walrus operator `:=`** (Python 3.8+) assigns *and* returns a value inside an expression, which avoids computing something twice or saves a line in a loop or comprehension:
 
@@ -819,7 +889,9 @@ Operators have a **precedence** order (`**` binds tightest, then unary minus, th
 - `is` is not a faster `==`. It compares identity, not value, and using it for general equality (`if x is 5`) is a bug that only accidentally works for cached small integers.
 - Chained comparisons (`a < b < c`) are real Python and evaluate the middle term once. They are clear and idiomatic for range checks.
 - The walrus `:=` needs parentheses in most positions and is for assigning within an expression. Overusing it hurts readability; reach for it when it genuinely removes duplication.
+- `x += y` is not simply "in place". Mutable types mutate through `__iadd__`; immutable types build a new object and rebind. `id()` before and after is the way to see which happened.
 - `in` on a dict checks keys, not values. Use `value in d.values()` to search values.
+- `&`, `|`, and `^` are bitwise on integers, set algebra on sets, and (for `|`) a merge on dicts. The symbol is fixed; the behavior comes from the operand type.
 
 ---
 
@@ -952,6 +1024,18 @@ else:
 # found odd: 9
 ```
 
+`continue` is the other half of that pair. It abandons the rest of the current iteration and jumps straight to the next one, which lets you handle the exceptional cases first and keep the main body unindented instead of wrapping it in an `if`:
+
+```python
+for n in range(1, 8):
+    if n % 3 == 0:
+        continue           # skip multiples of 3 and move on to the next n
+    print(n, end=" ")      # 1 2 4 5 7
+print()
+```
+
+Both keywords apply to the **innermost** loop only. Breaking out of a nested loop therefore takes a flag, a sentinel value, or — far more readable — extracting the loops into a function and using `return`.
+
 A `while` loop suits the case where you do not know the count in advance, such as reading until a sentinel or retrying until success:
 
 ```python
@@ -967,6 +1051,7 @@ print("liftoff")
 - `range` is lazy: it does not build the full list in memory, so `range(10**9)` is cheap. Wrap in `list()` only when you truly need the materialized list.
 - `zip` stops at the shortest iterable. Use `itertools.zip_longest` if you need to pad to the longest instead.
 - The loop `else` runs when the loop completes without `break`. Read it as "no break" rather than "otherwise"; that mental relabeling makes it click.
+- `break` and `continue` affect only the innermost loop. To leave a nested loop early, put it in a function and `return` rather than juggling flag variables.
 - Modifying a list while iterating over it causes skipped or repeated items. Iterate over a copy (`for x in items[:]`) or build a new list instead.
 
 ---
@@ -1019,7 +1104,7 @@ print(flat)            # [1, 2, 3, 4]
 Comprehensions are concise and usually faster than the equivalent explicit loop — but readability has a limit. If a comprehension grows two or more conditions and a nested loop, a plain `for` loop is clearer. Prefer the generator form `(...)` over `[...]` when you only iterate once and do not need to keep the whole result, because it avoids building the full list in memory.
 
 ```python
-# memory-friendly: never materializes a billion-item list
+# memory-friendly: never materializes the million-item list
 total = sum(x for x in range(10**6) if x % 2 == 0)
 ```
 
@@ -1213,7 +1298,9 @@ Assigning to a name inside a function makes it **local by default** — even if 
 ```python
 count = 0
 def increment():
-    count = count + 1      # UnboundLocalError: count is local here but used before assignment
+    count = count + 1
+# increment()   raises UnboundLocalError: cannot access local variable 'count'
+#               where it is not associated with a value
 # the assignment marks count as local, so the read on the right has no value yet
 ```
 
@@ -1295,7 +1382,7 @@ print(sorted(people, key=itemgetter("age")))   # sorted by the age key
 ```
 
 **Notes:**
-- A lambda is limited to one expression with no statements, so no assignments, loops, or `return`. If you need more, use a named `def`.
+- A lambda is limited to one expression with no statements, so no loops, no `return`, and no plain assignment (the walrus `:=` is the narrow exception, since it is an expression). If you need more, use a named `def`.
 - `map` and `filter` return lazy iterators in Python 3, not lists. They are single-use and must be wrapped in `list()` to materialize.
 - Prefer comprehensions to `map`/`filter` plus lambda for readability. Reserve `map`/`filter` for when you already have a named function to apply.
 - For sort keys, `operator.itemgetter` and `operator.attrgetter` are faster and clearer than equivalent lambdas, and they read well.
@@ -1753,6 +1840,7 @@ The most common ones, grouped by what they enable:
 | `__getitem__` | indexing and iteration | `obj[i]`, `for x in obj` |
 | `__contains__` | membership | `x in obj` |
 | `__add__`, `__mul__`, etc. | arithmetic operators | `obj + other` |
+| `__and__`, `__or__`, `__xor__` | bitwise / set-style operators | `obj & other` |
 | `__call__` | call the instance like a function | `obj(...)` |
 | `__enter__` / `__exit__` | context-manager `with` | `with obj:` |
 
@@ -1783,6 +1871,8 @@ class Vector:
         return Vector(self.x + other.x, self.y + other.y)
     def __eq__(self, other):
         return (self.x, self.y) == (other.x, other.y)
+    def __hash__(self):
+        return hash((self.x, self.y))      # define with __eq__, or instances become unhashable
     def __repr__(self):
         return f"Vector({self.x}, {self.y})"
 
@@ -1790,13 +1880,13 @@ print(Vector(1, 2) + Vector(3, 4))     # Vector(4, 6)
 print(Vector(1, 2) == Vector(1, 2))    # True
 ```
 
-If you define `__eq__`, you usually must also define `__hash__` (or the class becomes unhashable and cannot go in a set or be a dict key), because Python's rule is that equal objects must have equal hashes. Implementing `__getitem__` and `__len__` is enough to make a custom object indexable and iterable, since Python falls back to integer-indexing when no `__iter__` exists.
+If you define `__eq__`, you usually must also define `__hash__` (or the class becomes unhashable and cannot go in a set or be a dict key), because Python's rule is that equal objects must have equal hashes. Implementing `__getitem__` alone is enough to make a custom object both indexable and iterable, because Python falls back to integer-indexing from zero when no `__iter__` exists; add `__len__` so `len(obj)` works too.
 
 **Notes:**
 - `__str__` is for users (readable), `__repr__` is for developers (unambiguous). Define `__repr__` at minimum; it is the fallback when `__str__` is missing and is what containers display.
 - Defining `__eq__` without `__hash__` makes instances unhashable. If the object should be usable in sets or as dict keys, define both, keeping "equal implies equal hash".
 - Operator overloading via `__add__`, `__mul__`, and friends makes custom types feel native, but only overload operators where the meaning is obvious to a reader.
-- `__getitem__` plus `__len__` gives indexing and iteration for free. For full control over iteration, implement `__iter__` returning an iterator instead.
+- `__getitem__` alone gives both indexing and iteration for free; `__len__` is what makes `len(obj)` work. For full control over iteration, implement `__iter__` returning an iterator instead.
 
 ---
 
@@ -1866,7 +1956,9 @@ try:
 except ZeroDivisionError:
     result = None
     print("cannot divide by zero")
-print(result)              # cannot divide by zero \n None
+print(result)              # None
+# output: cannot divide by zero
+#         None
 ```
 
 The full structure has four clauses, each with a distinct job. `try` holds the risky code, `except` handles a matching error, `else` runs only if no exception occurred, and `finally` always runs (success or failure) — which is where cleanup belongs.
@@ -1923,14 +2015,51 @@ except InsufficientFundsError as e:
 The exception hierarchy matters: catching a broad parent like `Exception` also catches its subclasses, so order your `except` clauses from specific to general. Never silence errors with a bare `except: pass`, which hides bugs including ones you did not anticipate (a mistyped name raises `NameError`, which you would swallow silently).
 
 ```python
-# Python 3.14 allows omitting the parentheses around multiple exception types:
-# except ValueError, TypeError as e:   (PEP 758)
+# Python 3.14 (PEP 758) allows omitting the parentheses around multiple exception types,
+# but only when you are NOT capturing the exception with `as`:
+# except ValueError, TypeError:          # new in 3.14, no parentheses needed
+# except (ValueError, TypeError) as e:   # parentheses still required with `as`
 ```
+
+Writing `except ValueError, TypeError as e:` is a `SyntaxError` even on 3.14 — the message is explicit about it: *multiple exception types must be parenthesized when using 'as'*. The unparenthesized form was deliberately restricted to the case with no capture variable, partly because Python 2 used that exact spelling to mean something else entirely.
+
+**Exception groups and `except*`.** Sometimes several independent failures happen at once — a batch of parallel tasks, a list of validation rules — and folding them into a single exception throws information away. Python 3.11 added `ExceptionGroup` to carry several exceptions together, and the `except*` clause to handle them by type. Each `except*` branch receives a *group* holding only the exceptions that matched it, and unlike ordinary `except`, more than one branch can run for the same `try`:
+
+```python
+try:
+    raise ExceptionGroup("two failures", [ValueError("bad value"), TypeError("bad type")])
+except* ValueError as eg:
+    print("ValueError branch:", [str(e) for e in eg.exceptions])
+except* TypeError as eg:
+    print("TypeError branch:", [str(e) for e in eg.exceptions])
+# ValueError branch: ['bad value']
+# TypeError branch: ['bad type']
+```
+
+This is not a corner case you can skip: `asyncio.TaskGroup` (Section 35) reports failures exactly this way, so a task group with two failing tasks raises an `ExceptionGroup` rather than either individual error. One restriction is worth remembering — a single `try` must commit to one style, because mixing `except` and `except*` on the same block is a `SyntaxError`.
+
+**`assert` states an invariant, it does not validate input.** The statement `assert condition, message` raises `AssertionError` when the condition is falsy and does nothing otherwise. It records an assumption you believe is always true — a check on your own logic rather than on the outside world:
+
+```python
+def average(nums):
+    assert len(nums) > 0, "average() needs a non-empty sequence"
+    return sum(nums) / len(nums)
+
+print(average([2, 4, 6]))            # 4.0
+try:
+    average([])
+except AssertionError as e:
+    print(f"AssertionError: {e}")    # AssertionError: average() needs a non-empty sequence
+```
+
+The detail interviewers reach for: assertions are **removed entirely** when Python runs with the `-O` flag, which sets `__debug__` to `False` and makes the compiler skip every `assert` statement. Run the code above with `python -O` and the guard silently disappears, so the empty list falls through to a `ZeroDivisionError` instead. That makes `assert` unsafe for anything a user can reach — validating a payload, enforcing a permission, checking an API contract — all of which need an explicit `if ...: raise ValueError(...)` that no flag can strip. A related trap is `assert (cond, "message")`: the parentheses make it a non-empty tuple, which is always truthy, so the assertion never fires. Python warns about that one (`SyntaxWarning: assertion is always true, perhaps remove parentheses?`), but only if you read your warnings.
 
 **Notes:**
 - Catch specific exception types, ordered specific-to-general. A bare `except:` (or `except Exception`) hides real bugs and makes debugging miserable.
 - `finally` always runs, even if the `try` returns or re-raises, so it is the right place for cleanup. The `else` clause runs only when no exception was raised.
 - Define custom exceptions by subclassing `Exception` for clear, catchable domain errors. Subclass `Exception`, not the lower-level `BaseException`, which also covers `KeyboardInterrupt` and `SystemExit`.
+- `ExceptionGroup` with `except*` (3.11+) handles several simultaneous failures, and more than one branch can fire. A `try` uses either `except` or `except*`, never both.
+- `assert` documents an invariant and vanishes under `python -O`. Never use it for input validation or security checks; raise a real exception instead.
 - "Ask forgiveness, not permission" (try/except) is often more Pythonic than checking conditions first, especially for race-prone operations like file or dict access.
 
 ---
@@ -2098,10 +2227,10 @@ def greet(name: str, times: int = 1) -> str:
 age: int = 36
 names: list[str] = ["Ada", "Alan"]
 scores: dict[str, float] = {"Ada": 0.9}
-print(greet("Ada", 2))     # hi Ada hi Ada
+print(greet("Ada", 2))     # hi Ada hi Ada    (note the trailing space from the template)
 ```
 
-The `->` in a signature introduces the **return type annotation**: `def greet(...) -> str:` declares that `greet` returns a `str`, just as `name: str` declares the parameter's type. The arrow is only readable syntax that Python itself doesn't enforce, but frameworks such as FastAPI and libraries like pydantic read these annotations at runtime and build real behavior (request parsing, validation, docs) from them.
+The `->` in a signature introduces the **return type annotation**: `def greet(...) -> str:` declares that `greet` returns a `str`, just as `name: str` declares the parameter's type. The arrow is only readable syntax that Python itself does not enforce, but frameworks such as FastAPI and libraries like pydantic read these annotations at runtime and build real behavior (request parsing, validation, docs) from them.
 
 Since Python 3.9 you write the built-in generics directly (`list[int]`, `dict[str, int]`, `tuple[int, ...]`) with no imports. The `typing` module supplies the rest. `Optional[X]` means "X or None" and `X | Y` (3.10+) is the modern union syntax. `Any` opts out of checking for a value.
 
@@ -2130,12 +2259,39 @@ def transpose(m: Matrix) -> Matrix:
 print(transpose([[1, 2], [3, 4]]))         # [[1, 3], [2, 4]]
 ```
 
+**Annotations became lazy in 3.14 (PEP 649).** Until 3.14 an annotation was an ordinary expression evaluated the instant the `def` or `class` ran, so naming a type defined further down the file raised `NameError` and the workaround was to quote it. Python 3.14 defers that evaluation until something actually asks for the annotations, so unquoted forward references simply work:
+
+```python
+def make(n: int) -> Widget:        # NameError before 3.14, fine from 3.14 on
+    return Widget(n)
+
+class Widget:
+    def __init__(self, n): self.n = n
+
+print(make(2).n)                   # 2
+print(make.__annotations__)        # {'n': <class 'int'>, 'return': <class '__main__.Widget'>}
+```
+
+The companion `annotationlib` module reads annotations in a chosen format, which matters for tools that want the written source text rather than the resolved object:
+
+```python
+import annotationlib
+
+def f(a: int, b: "Later") -> "Later": ...
+
+print(annotationlib.get_annotations(f, format=annotationlib.Format.STRING))
+# {'a': 'int', 'b': 'Later', 'return': 'Later'}
+```
+
+This supersedes `from __future__ import annotations` (PEP 563), which turned every annotation into a plain string as a blunt workaround for the same problem. That import still functions, but new code targeting 3.14 has no reason to reach for it.
+
 Type hints shine in larger codebases and at team boundaries — a well-typed function signature documents intent precisely and lets tools catch a whole class of bugs (passing a `str` where an `int` is expected) without writing a single test. They cost a little verbosity, which is why small scripts often skip them, but for anything shared or long-lived they pay off.
 
 **Notes:**
 - Type hints are not enforced at runtime. Python does not check them; a static analyzer (`mypy`, `pyright`) or your editor does. Passing the wrong type still runs unless a checker flags it first.
 - Use built-in generics (`list[int]`, `dict[str, int]`) on 3.9+ rather than the old capitalized `typing.List`. Use `X | Y` for unions on 3.10+.
 - `Optional[X]` is shorthand for `X | None`. Annotate functions that may return nothing this way so callers know to handle `None`.
+- From 3.14 annotations are evaluated lazily (PEP 649), so unquoted forward references work and `from __future__ import annotations` is no longer needed. Reach for `annotationlib.get_annotations` when you need a specific format.
 - Hints are most valuable in shared libraries, APIs, and large projects. For a five-line throwaway script they are optional; for code others depend on, they are close to essential.
 
 ---
@@ -2208,8 +2364,12 @@ print(b)               # [1, 2]          b still points at the original
 **Identity caching is an implementation detail.** CPython reuses small integer objects (about -5 to 256) and interns some strings, so `is` can return `True` for equal small values. This is not a guarantee and varies by context (the same literal on one line may be folded to one object, while values computed separately are not). The lesson is simply: never use `is` to compare values. Use `==` for equality and reserve `is` for `None` and other singletons.
 
 ```python
-# Do not rely on either of these results; they are implementation-dependent:
-print(256 is 256)      # may be True (cached)
+# Do not rely on this result; it is implementation-dependent:
+a = 256
+b = 256
+print(a is b)          # may be True (small-int caching)
+# Writing `256 is 256` directly instead is worse: Python emits
+# SyntaxWarning: "is" with 'int' literal. Did you mean "=="?
 # Always compare values with ==:
 print(1000 == 1000)    # True, the correct way to compare
 ```
@@ -2233,7 +2393,8 @@ import dis
 def add(a, b):
     return a + b
 dis.dis(add)
-# shows LOAD_FAST a, LOAD_FAST b, BINARY_OP +, RETURN_VALUE
+# 3.14:           RESUME, LOAD_FAST_BORROW_LOAD_FAST_BORROW (a, b), BINARY_OP +, RETURN_VALUE
+# 3.13 and older: RESUME, LOAD_FAST a, LOAD_FAST b, BINARY_OP +, RETURN_VALUE
 ```
 
 The `.pyc` files in `__pycache__` are cached bytecode so unchanged modules skip recompilation. They are an optimization, not something you manage.
@@ -2260,9 +2421,12 @@ The practical decision tree most interviews want:
 ```python
 # CPU-bound work parallelizes across processes, not threads:
 from multiprocessing import Pool
+
 def square(n): return n * n
-# with Pool(4) as p:
-#     print(p.map(square, range(10)))   # uses multiple cores
+
+if __name__ == "__main__":                # required: children re-import this module,
+    with Pool(4) as p:                    # so unguarded Pool code would recurse
+        print(p.map(square, range(10)))   # [0, 1, 4, 9, ..., 81]   uses multiple cores
 ```
 
 A major recent change: **Python 3.13 introduced an experimental free-threaded build** that can run without the GIL, and **Python 3.14 made free-threaded Python officially supported** (PEP 779). It is a separate build, not yet the default — but it signals that the long-standing GIL limitation is finally being lifted. For the foreseeable future, though, the standard interpreter still has the GIL, so the table above remains the right answer in an interview.
@@ -2275,7 +2439,104 @@ A major recent change: **Python 3.13 introduced an experimental free-threaded bu
 
 ---
 
-## 35. Memory, Iteration, and Performance Habits
+## 35. Async and Await
+
+Threads and processes are not Python's only concurrency story. `async`/`await` provides **cooperative concurrency**: one thread, one event loop, and coroutines that voluntarily hand control back whenever they would otherwise sit idle waiting on a socket or a disk. Nothing runs in parallel, yet thousands of waits overlap, which is why `asyncio` handles far more simultaneous connections than a thread pool of the same size.
+
+The vocabulary is small. `async def` defines a **coroutine function**. Calling one executes none of its body; it hands back a **coroutine object** that an event loop must drive. `await` marks the point where a coroutine suspends so the loop can run something else, and `asyncio.run` starts the loop and blocks until the coroutine finishes.
+
+```python
+import asyncio
+
+async def greet(name):            # a coroutine FUNCTION
+    return f"hi {name}"
+
+coro = greet("Ada")               # calling it runs NO code; you get a coroutine object
+print(type(coro))                 # <class 'coroutine'>
+print(asyncio.run(coro))          # hi Ada   asyncio.run drives it to completion
+```
+
+Concurrency appears only once several coroutines are in flight together. `asyncio.gather` schedules them at the same time and waits for every result, so the elapsed time is the *longest* wait rather than the sum of them:
+
+```python
+import asyncio, time
+
+async def fetch(name, delay):
+    print(f"start {name}")
+    await asyncio.sleep(delay)     # suspend here; the loop runs the other coroutine
+    print(f"done {name}")
+    return name.upper()
+
+async def main():
+    started = time.perf_counter()
+    results = await asyncio.gather(fetch("a", 0.3), fetch("b", 0.1))
+    print(results, f"in ~{time.perf_counter() - started:.1f}s")
+
+asyncio.run(main())
+# start a
+# start b
+# done b                     b waited less, so it finishes first
+# done a
+# ['A', 'B'] in ~0.3s        0.3s total, not 0.4s
+```
+
+Since 3.11 the better grouping tool is `asyncio.TaskGroup`, which cancels its remaining tasks if one of them raises instead of leaving orphans running in the background:
+
+```python
+import asyncio
+
+async def fetch(name, delay):
+    await asyncio.sleep(delay)
+    return name.upper()
+
+async def main():
+    async with asyncio.TaskGroup() as tg:      # 3.11+, safer than gather
+        a = tg.create_task(fetch("a", 0.2))
+        b = tg.create_task(fetch("b", 0.1))
+    print(a.result(), b.result())              # A B   both complete when the block exits
+
+asyncio.run(main())
+```
+
+Two further keywords round out the set. `async with` drives an asynchronous context manager (one defining `__aenter__` and `__aexit__`), and `async for` walks an asynchronous iterator, which is how you consume results that trickle in over time:
+
+```python
+import asyncio
+
+async def ticker(n):
+    for i in range(n):
+        await asyncio.sleep(0.05)
+        yield i                    # an async generator
+
+async def main():
+    async for value in ticker(3):
+        print(value, end=" ")      # 0 1 2
+    print()
+
+asyncio.run(main())
+```
+
+The most common bug by far is a forgotten `await`. The call quietly produces a coroutine object that never executes, and Python only mentions it at garbage-collection time:
+
+```python
+async def main():
+    work()          # BUG: no await, so the body never runs
+# once main() is actually run, Python reports:
+# RuntimeWarning: coroutine 'work' was never awaited
+```
+
+The second most common is blocking the loop. `time.sleep`, a synchronous HTTP client, or a heavy computation inside a coroutine freezes *every* other task, because there is only one thread to go around. Use `await asyncio.sleep`, an async-aware library, or hand the blocking call to `asyncio.to_thread`.
+
+**Notes:**
+- `async def` creates a coroutine function; calling it returns a coroutine object and runs nothing. Only `await`, `asyncio.run`, or a task actually executes the body.
+- `await` is legal only inside an `async def`. In a normal function it is `SyntaxError: 'await' outside async function`; at module level the message is `'await' outside function`.
+- Async is I/O-bound concurrency, not CPU-bound parallelism. The GIL is beside the point here because only one thread exists; Section 34 has the decision table.
+- `asyncio.gather` collects results; `asyncio.TaskGroup` (3.11+) also cancels siblings when one task fails and reports the failures as an `ExceptionGroup` (Section 29). Prefer the task group in new code.
+- Never call a blocking function inside a coroutine. Wrap it with `asyncio.to_thread` so the event loop stays responsive.
+
+---
+
+## 36. Memory, Iteration, and Performance Habits
 
 A handful of habits separate code that scales from code that does not, and they make good interview talking points because each has a clear "why".
 
@@ -2328,7 +2589,7 @@ print(round(t, 4), "seconds for 10k runs")
 
 ---
 
-## 36. Common Mistakes
+## 37. Common Mistakes
 
 **Using `is` to compare values.** `is` checks identity, not equality. `if x is 5` only works by accident through small-integer caching. Use `==` for values and reserve `is` for `None` and singletons.
 
@@ -2352,7 +2613,7 @@ print(round(t, 4), "seconds for 10k runs")
 
 **Reusing an exhausted generator.** A generator is single-pass. After one full iteration it yields nothing; rebuild it or store the items in a list.
 
-**Building strings with `+=` in a loop.** Each step copies the whole string (O(n squared) overall). Collect parts in a list and `"".join` once.
+**Building strings with `+=` in a loop.** CPython softens this with an in-place resize when the string has exactly one reference, so the naive loop is often linear in practice — but that optimization vanishes the moment a second name holds the string, and other implementations do not have it at all. Collect parts in a list and `"".join` once, which is both faster and predictable everywhere.
 
 **`mutable += ` surprises.** `a += [x]` mutates a shared list in place, while `a = a + [x]` rebinds. The two differ when another name shares the object.
 
@@ -2362,7 +2623,7 @@ print(round(t, 4), "seconds for 10k runs")
 
 ---
 
-## 37. Interview Quick-Fire
+## 38. Interview Quick-Fire
 
 Short, high-frequency questions with the answers an interviewer expects.
 
@@ -2400,7 +2661,7 @@ Short, high-frequency questions with the answers an interviewer expects.
 
 ---
 
-## 38. Cheat Sheet
+## 39. Cheat Sheet
 
 **Built-in data types**
 
@@ -2427,6 +2688,17 @@ Short, high-frequency questions with the answers an interviewer expects.
 | concatenate | `seq1 + seq2` |
 | repeat | `seq * 3` |
 
+**Operators**
+
+| Family | Symbols |
+| :--- | :--- |
+| arithmetic | `+  -  *  /  //  %  **` |
+| comparison | `==  !=  <  <=  >  >=` (chainable) |
+| logical | `and  or  not` |
+| identity / membership | `is`, `is not`, `in`, `not in` |
+| bitwise | `&  \|  ^  ~  <<  >>` |
+| walrus | `(n := expr)` |
+
 **Control flow**
 
 | Construct | Form |
@@ -2437,6 +2709,7 @@ Short, high-frequency questions with the answers an interviewer expects.
 | for loop | `for item in iterable:` |
 | while loop | `while cond:` |
 | comprehension | `[expr for x in it if cond]` |
+| coroutine | `async def f():` with `await other()` |
 
 **Functions**
 
@@ -2500,6 +2773,101 @@ finally:
 | install from file | `pip install -r requirements.txt` |
 | create venv | `python -m venv .venv` |
 | activate (Unix) | `source .venv/bin/activate` |
+
+---
+
+## 40. Keyword Reference
+
+Python reserves **35 keywords** that can never be used as identifiers, plus four **soft keywords** that are contextual: they act as keywords only in particular positions and stay usable as ordinary names everywhere else. `keyword.kwlist`, `keyword.softkwlist`, and `keyword.iskeyword("if")` expose all of this at runtime.
+
+**Values and constants**
+
+| Keyword | What it does | Covered in |
+| :--- | :--- | :--- |
+| `True` | boolean true, and an `int` equal to 1 | 5, 11 |
+| `False` | boolean false, and an `int` equal to 0 | 5, 11 |
+| `None` | the null object, the only value of `NoneType` | 11 |
+
+**Logic and comparison**
+
+| Keyword | What it does | Covered in |
+| :--- | :--- | :--- |
+| `and` | short-circuit conjunction; returns an operand, not a bool | 11, 13 |
+| `or` | short-circuit disjunction; returns an operand, not a bool | 11, 13 |
+| `not` | logical negation; also half of `is not` and `not in` | 13 |
+| `is` | identity comparison (same object), never value equality | 13, 33 |
+| `in` | membership test, and the separator in a `for` header | 13, 15 |
+
+**Conditionals and pattern matching**
+
+| Keyword | What it does | Covered in |
+| :--- | :--- | :--- |
+| `if` | conditional branch | 14 |
+| `elif` | chained alternative branch | 14 |
+| `else` | fallback branch; also used on loops and on `try` | 14, 15, 29 |
+| `match` | *soft*: structural pattern matching (3.10+) | 14 |
+| `case` | *soft*: one pattern arm inside `match` | 14 |
+| `_` | *soft*: the wildcard pattern inside `match` | 14 |
+
+**Loops**
+
+| Keyword | What it does | Covered in |
+| :--- | :--- | :--- |
+| `for` | iterate over an iterable | 15 |
+| `while` | loop while a condition stays truthy | 15 |
+| `break` | exit the innermost loop immediately | 15 |
+| `continue` | skip to the next iteration of the innermost loop | 15 |
+
+**Functions**
+
+| Keyword | What it does | Covered in |
+| :--- | :--- | :--- |
+| `def` | define a function or method | 17 |
+| `return` | end a function and hand back a value | 17 |
+| `lambda` | build a small anonymous function expression | 20 |
+| `yield` | produce a value from a generator and suspend | 22 |
+| `pass` | do nothing; a syntactic placeholder | 17 |
+
+**Names and namespaces**
+
+| Keyword | What it does | Covered in |
+| :--- | :--- | :--- |
+| `global` | rebind a module-level name from inside a function | 19 |
+| `nonlocal` | rebind a name in the nearest enclosing function | 19 |
+| `del` | unbind a name, or delete an item from a container | 4 |
+| `class` | define a class | 23 |
+| `import` | load a module | 31 |
+| `from` | select names out of a module; also `raise ... from ...` | 29, 31 |
+| `as` | bind a result to a name in `with`, `except`, and `import` | 29, 30, 31 |
+| `type` | *soft*: declare a type alias (3.12+) | 32 |
+
+**Errors and cleanup**
+
+| Keyword | What it does | Covered in |
+| :--- | :--- | :--- |
+| `try` | begin a protected block | 29 |
+| `except` | handle a matching exception | 29 |
+| `finally` | run cleanup whether or not an exception occurred | 29 |
+| `raise` | signal an exception yourself | 29 |
+| `assert` | check an invariant; stripped under `python -O` | 29 |
+| `with` | run a block inside a context manager | 30 |
+
+**Asynchronous code**
+
+| Keyword | What it does | Covered in |
+| :--- | :--- | :--- |
+| `async` | mark a coroutine function, `async with`, or `async for` | 35 |
+| `await` | suspend a coroutine until an awaitable completes | 35 |
+
+**The keywords that wear more than one hat.** Five of them do genuinely different jobs depending on where they appear, and that is where most of the confusion lives.
+
+`as` binds a name in three unrelated statements — `with open(path) as f`, `except ValueError as e`, and `import numpy as np` — but the reading is identical every time: *and call it this*. `in` is a membership operator in `x in seq` and a mere separator in `for x in seq`, with no connection between the two. `else` attaches to `if` (the other branch), to `for` and `while` (the loop ended without a `break`), and to `try` (no exception was raised); only the first is intuitive, and the loop version is best read as "no break". `not` is a unary operator on its own but also forms the two-word operators `is not` and `not in`, which read better than negating the whole expression. And `from` selects names in `from math import sqrt` but names a cause in `raise ValueError("bad") from err`.
+
+**Notes:**
+- 35 hard keywords, 4 soft ones. Using a hard keyword as an identifier is a `SyntaxError`; soft keywords (`match`, `case`, `type`, `_`) remain legal variable names, so `match = 5` works fine.
+- Naming a variable after a soft keyword is legal but rarely wise, and `type` in particular shadows a useful built-in for the rest of the scope.
+- `_` has a second, purely conventional life outside `match` as the throwaway name for a value you intend to ignore, as in `for _ in range(3)`. That convention is not a language rule.
+- `await` outside an `async def` and `yield` outside a function are both `SyntaxError`. Neither is a runtime check.
 
 ---
 
