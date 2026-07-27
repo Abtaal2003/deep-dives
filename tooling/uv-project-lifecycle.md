@@ -11,18 +11,19 @@ A complete walkthrough of what happens when you create a Python project with [uv
 - [uv: Caching](https://docs.astral.sh/uv/concepts/cache/), the shared package cache
 - [uv: Locking and syncing](https://docs.astral.sh/uv/concepts/projects/sync/), `--locked`, `--frozen`, and automatic locking
 - [uv: Python versions](https://docs.astral.sh/uv/concepts/python-versions/), version discovery and pinning
+- [uv: Using workspaces](https://docs.astral.sh/uv/concepts/projects/workspaces/), several packages in one repository
 - [uv: Exporting a lockfile](https://docs.astral.sh/uv/concepts/projects/export/), generating requirements.txt
 - [Python packaging: pyproject.toml](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/), the project recipe
-- [Python: venv](https://docs.python.org/3/library/venv.html), the standard-library module behind `.venv` internals and the older workflow in Section 15
-- [VS Code: Python environments](https://code.visualstudio.com/docs/python/environments), the interpreter picker described in Section 6
+- [Python: venv](https://docs.python.org/3/library/venv.html), the standard-library module behind `.venv` internals and the older workflow in Section 17
+- [VS Code: Python environments](https://code.visualstudio.com/docs/python/environments), the interpreter picker described in Section 7
 
 ---
 
 ## How to read this guide
 
-The sections follow the real order you would run things: set up, create a project, add what it needs, run it, then understand the files, structure, and storage that resulted. Each section explains the command, what it changes on disk, and the reasoning behind it, then ends with a short **Notes** list of the things that bite people.
+The sections follow the real order you would run things: set up, decide which command starts you off, create a project, add what it needs, run it, then understand the files, structure, and storage that resulted. Each section explains the command, what it changes on disk, and the reasoning behind it, then ends with a short **Notes** list of the things that bite people.
 
-One ordering choice is deliberate and worth flagging. The virtual environment does not appear until Section 7, well after you have already built and run a project. That is not an oversight — it is how uv actually behaves. You are never required to create an environment yourself, so the guide does not teach it as a step. It arrives later as something to understand and manage rather than something to remember to do.
+One ordering choice is deliberate and worth flagging. The virtual environment does not appear until Section 8, well after you have already built and run a project. That is not an oversight — it is how uv actually behaves. You are never required to create an environment yourself, so the guide does not teach it as a step. It arrives later as something to understand and manage rather than something to remember to do.
 
 The recurring theme to watch for is a split that runs through everything. A few heavy, reusable resources live **outside** any single project (the Python interpreters and the package cache), while each project keeps only the light, specific things (its recipe and its environment). Hold that split in mind and every behavior below follows from it.
 
@@ -35,37 +36,39 @@ The recurring theme to watch for is a split that runs through everything. A few 
 - [2. The Mental Model in One Picture](#2-the-mental-model-in-one-picture)
 
 **Creating and Running a Project**
-- [3. Initialize the Project](#3-initialize-the-project)
-- [4. Add Dependencies](#4-add-dependencies)
-- [5. Running Code](#5-running-code)
-- [6. Select the Interpreter in the Editor](#6-select-the-interpreter-in-the-editor)
+- [3. Choosing Your Starting Command](#3-choosing-your-starting-command)
+- [4. Initialize the Project](#4-initialize-the-project)
+- [5. Add Dependencies](#5-add-dependencies)
+- [6. Running Code](#6-running-code)
+- [7. Select the Interpreter in the Editor](#7-select-the-interpreter-in-the-editor)
 
 **The Environment Itself**
-- [7. Create and Manage the Virtual Environment](#7-create-and-manage-the-virtual-environment)
+- [8. Create and Manage the Virtual Environment](#8-create-and-manage-the-virtual-environment)
 
 **Structure and Reproducibility**
-- [8. The Full File and Folder Layout](#8-the-full-file-and-folder-layout)
-- [9. Anatomy of the Generated Files](#9-anatomy-of-the-generated-files)
-- [10. Cloning and Rebuilding](#10-cloning-and-rebuilding)
-- [11. Durable vs Disposable](#11-durable-vs-disposable)
+- [9. The Full File and Folder Layout](#9-the-full-file-and-folder-layout)
+- [10. Anatomy of the Generated Files](#10-anatomy-of-the-generated-files)
+- [11. Cloning and Rebuilding](#11-cloning-and-rebuilding)
+- [12. Durable vs Disposable](#12-durable-vs-disposable)
+- [13. Multiple Components in One Repository](#13-multiple-components-in-one-repository)
 
 **Versions and Storage**
-- [12. Multiple Python Versions](#12-multiple-python-versions)
-- [13. The Shared Cache](#13-the-shared-cache)
-- [14. Cleaning Up and Reclaiming Disk Space](#14-cleaning-up-and-reclaiming-disk-space)
+- [14. Multiple Python Versions](#14-multiple-python-versions)
+- [15. The Shared Cache](#15-the-shared-cache)
+- [16. Cleaning Up and Reclaiming Disk Space](#16-cleaning-up-and-reclaiming-disk-space)
 
 **Interoperability**
-- [15. The Older Way: requirements.txt](#15-the-older-way-requirementstxt)
+- [17. The Older Way: requirements.txt](#17-the-older-way-requirementstxt)
 
 **Reference**
-- [16. Common Mistakes](#16-common-mistakes)
-- [17. Cheat Sheet](#17-cheat-sheet)
+- [18. Common Mistakes](#18-common-mistakes)
+- [19. Cheat Sheet](#19-cheat-sheet)
 
 ---
 
 ## 1. The Starting Point
 
-Before any project exists, three things live on the machine independently of any project:
+Before any project exists, four things live on the machine independently of any project:
 
 | Resource | Where it lives | Role |
 | :--- | :--- | :--- |
@@ -114,7 +117,34 @@ The project folder holds what is specific and disposable. The shared store holds
 
 ---
 
-## 3. Initialize the Project
+## 3. Choosing Your Starting Command
+
+Almost every uv walkthrough opens with `uv init`, which quietly assumes you are starting from nothing. Most real work does not. You are usually adopting uv in a folder that already holds code, or picking up a repository someone else already set up. Running the wrong opening command is the most common way to end up fighting the tool, so the decision is worth settling before the first keystroke.
+
+Four situations cover nearly everything:
+
+| Situation | Command | What you get |
+| :--- | :--- | :--- |
+| A new project, nothing exists yet | `uv init myproject` | the full scaffold: `pyproject.toml`, `.python-version`, `main.py`, `README.md`, `.gitignore`, and a Git repository |
+| An existing folder with code but no dependency file | `uv init --bare`, then `uv add <package>` for each one it needs | a minimal `pyproject.toml`, and nothing else touched |
+| An existing project tracking dependencies in `requirements.txt` | `uv init --bare`, then `uv add -r requirements.txt` | the old list imported into `pyproject.toml` and locked (Section 17) |
+| A cloned project that already uses uv | `uv sync` | the `.venv` rebuilt from the recipe that was committed (Section 11) |
+
+The split between the first two rows is what `--bare` exists for. Plain `uv init` writes a starter application around you: a `main.py` you did not ask for, a `README.md`, a `.gitignore`, and a Git repository. In an empty directory that is convenient. In a folder that already has forty Python files, its own README, and five years of history it is noise at best and a collision at worst. `uv init --bare` writes only the minimal `pyproject.toml` and leaves everything else alone, which is exactly what adoption needs.
+
+The fourth row is the one people get wrong in the other direction. A repository that already contains a `pyproject.toml` and a `uv.lock` needs nothing initialized — the recipe is already written, and your job is to rehydrate it rather than author it. `uv sync` reads what was committed and reconstructs the rest. uv guards this for you: `uv init` refuses to run where a project is already initialized, so the mistake fails loudly instead of quietly producing a second one. The exception is a `pyproject.toml` that carries only tool configuration and no `[project]` table, which uv treats as a folder awaiting a project and fills in rather than rejecting.
+
+Two situations sit outside the table. If the repository holds several components that need dependency lists of their own, such as a web service alongside the library it imports, that is a workspace rather than a single project, and Section 13 covers the layout. And if all you want is to run one throwaway script with a couple of dependencies, you may not need a project at all — uv can run a standalone file that declares its own requirements inline, which is the one case this guide sets aside in the introduction.
+
+**Notes:**
+- Every row ends in the same place: a `pyproject.toml` and a `uv.lock` with an environment built from them. The first three build that state, the last one inherits it already committed.
+- `uv init --bare` is also the right choice inside a monorepo, where a nested Git repository and a second `.gitignore` would be actively unhelpful.
+- The `uv init` forms record a Python version without fetching it; the download waits for the first command that needs a working interpreter. `uv sync` in the last row is that command, so on a clone it does acquire the pinned interpreter (Section 11).
+- `uv init --bare` writes no `.python-version`, so a project adopted that way has no interpreter pin until you add one. Follow the adoption with `uv python pin` and commit the result, for the reasons in Section 11.
+
+---
+
+## 4. Initialize the Project
 
 ```bash
 uv init myproject
@@ -133,7 +163,7 @@ cd myproject
 
 It normally also initializes a Git repository (a hidden `.git` folder) so the project is version controlled from the first commit, and this is where the `.gitignore` comes from. The behavior is conditional rather than guaranteed: when the target directory already sits inside an existing repository, uv creates neither the nested `.git` nor the `.gitignore`, on the reasoning that the outer repository already covers it. If you are scaffolding inside a monorepo and wondering where your `.gitignore` went, that is why. Pass `--vcs none` to skip version control deliberately.
 
-What `uv init` does not do: it does not create the virtual environment, and it does not install anything. At this point there is no `.venv` folder and no `uv.lock`. Both appear on their own at the next step — you never ask for either. Section 9 opens each of these files up so you can see what is inside.
+What `uv init` does not do: it does not create the virtual environment, and it does not install anything. At this point there is no `.venv` folder and no `uv.lock`. Both appear on their own at the next step — you never ask for either. Section 10 opens each of these files up so you can see what is inside.
 
 ### Which Python version uv init chooses
 
@@ -143,6 +173,8 @@ What `uv init` does not do: it does not create the virtual environment, and it d
 | :--- | :--- | :--- |
 | `.python-version` | a bare version, for example `3.14` | which interpreter uv actually uses in this project |
 | `pyproject.toml` | `requires-python = ">=3.14"` | the floor that dependency resolution must respect |
+
+Both entries come from the same decision — whichever interpreter uv settled on — but they record it at different precision. `.python-version` gets the minor version as a bare string, and `requires-python` gets that same minor version as a lower bound. A machine running 3.12.7 therefore produces `3.12` and `>=3.12`, never `3.12.7` or `>=3.12.7`. Patch releases are deliberately left out of both: they do not change the language surface a project depends on, and pinning one would mean re-pinning after every security update.
 
 Left to itself, uv does not simply take the newest Python on the machine. It works through a documented search order, and the selection rule changes depending on where it finds a candidate:
 
@@ -168,6 +200,8 @@ To change the version later, do not hand-edit the file. Pin it, and let uv rewri
 uv python pin 3.12
 ```
 
+The same deferral applies here as at init time. `uv python pin` records a *request*; it does not install anything. If 3.12 is absent from the machine, the pin still succeeds and the download happens on the next command that needs a working interpreter, which is normally `uv sync`. Section 14 goes through this in detail.
+
 If you keep landing on a version you did not want across many new projects, set a machine-wide fallback once instead of correcting each project:
 
 ```bash
@@ -176,18 +210,30 @@ uv python pin --global 3.12
 
 That writes a `.python-version` into your user configuration directory, which uv consults for any directory that has no pin of its own.
 
-Keep `requires-python` in step when you do. The pin decides what runs, while `requires-python` decides what resolves — two different questions, and both need a true answer. If they contradict each other, such as a pin of `3.11` against `requires-python = ">=3.12"`, uv rejects the request rather than silently favoring one.
+Keep `requires-python` in step when you do. The pin decides what runs, while `requires-python` decides what resolves — two different questions, and both need a true answer. If they contradict each other, such as a pin of `3.11` against `requires-python = ">=3.12"`, uv refuses to let the two disagree silently. Depending on your uv version you get an outright error or a warning on the pin, and either way the resolution is the same: change `requires-python` as well.
+
+### Which version to choose
+
+The rules above decide which version you *get*. They say nothing about which one you should *want*, and that answer is usually forced rather than chosen:
+
+- **Match whatever will actually run the code.** If the project deploys to a container, a CI runner, or a cluster sitting on 3.11, develop on 3.11. A version that exists only on your laptop produces bugs that appear exactly once, in production. This constraint outranks everything below it.
+- **Otherwise take the latest stable release**, unless a dependency stops you. Newer minors are faster and better supported, and in a project you control there is no cost to being current.
+- **Expect the scientific and machine-learning stack to lag.** Compiled libraries ship a separate binary wheel per Python version, and a new minor release routinely waits months for the whole chain to catch up. Until those wheels exist, installing either falls back to a slow build from source or fails outright. If the project leans on that ecosystem, one minor version behind the newest is the low-friction default.
+- **Set `requires-python` to what you support, not what you run.** For an application the floor barely matters, since nothing else consumes it. For a library it is a promise — `>=3.13` on a package that would work fine on 3.10 excludes users for no reason. Choose the lowest version you are willing to test against.
+- **Never pin a patch version.** `3.12` means any `3.12.x`, which is what you want: security fixes arrive without any action from you. `3.12.7` freezes the project on one build and buys nothing.
+
+What makes this less weighty in uv than in older workflows is that the decision is cheap to reverse. An extra interpreter is a one-time download shared by every project that asks for it, so trying the project on another version is a single command rather than a rebuild of your machine's Python setup. Section 14 covers that side of it.
 
 **Notes:**
 - Think of `pyproject.toml` as the project's identity card. It is the durable record of what the project needs.
 - If you prefer to create the folder yourself, run `uv init` with no name from inside an existing empty directory.
 - `uv init --bare` writes only a minimal `pyproject.toml` — no `.python-version`, no `main.py`, no README, and no version control setup. It is the right choice when adopting uv in a project that already has its own structure.
-- `uv init` refuses to run where a `pyproject.toml` already exists, so it cannot quietly overwrite an existing project.
-- The default template is an application. `--lib` produces a library and `--package` a packaged application, both using a `src/` layout with a `[build-system]` table; Section 9 covers what that table is for.
+- `uv init` refuses to run where a project is already initialized, so it cannot quietly overwrite one. A `pyproject.toml` holding only `[tool.*]` configuration is the exception: uv adds the `[project]` table and leaves the rest intact.
+- The default template is an application. `--lib` produces a library and `--package` a packaged application, both using a `src/` layout with a `[build-system]` table; Section 10 covers what that table is for.
 
 ---
 
-## 4. Add Dependencies
+## 5. Add Dependencies
 
 ```bash
 uv add requests
@@ -237,7 +283,7 @@ Use project commands (`uv add`) for anything the project genuinely depends on. R
 
 ---
 
-## 5. Running Code
+## 6. Running Code
 
 There are three ways to run code, all using the project's environment:
 
@@ -251,13 +297,35 @@ uv run python main.py
 
 `uv run` executes inside the project's environment without manual activation, which sidesteps shell activation-policy issues entirely. It is the cleanest default habit.
 
+### The forms of uv run
+
+`uv run` is one command with several shapes, and knowing them removes most of the reasons anyone reaches for activation:
+
+```bash
+uv run python main.py                 # run a script through the interpreter
+uv run main.py                        # run a file directly, letting uv supply the interpreter
+uv run python                         # an interactive REPL inside the environment
+uv run python -c "import requests; print(requests.__version__)"
+uv run pytest                         # run a tool installed in this project
+uv run --with rich python             # add a package for this one command only
+uv run --python 3.11 main.py          # run once on a different interpreter
+```
+
+The first two lines look interchangeable and usually are, but they are not the same command. `uv run python main.py` hands the file to the project's interpreter, which is what you want almost always. `uv run main.py` hands the file to *uv*, which first checks it for an inline `# /// script` metadata block. If it finds one, uv abandons the project entirely and runs the file in an isolated cached environment built from the block, so none of the project's dependencies are available. For an ordinary file with no such block the two forms agree. Adding `python` is the way to be explicit that you mean the project.
+
+The bare `uv run python` form is the one worth committing to memory. It drops you into a REPL that sees exactly the packages the project has, which makes it the fastest way to answer "is this actually installed, and at what version?" without opening an editor or activating anything. `uv run python -c` is the same check as a one-liner, useful in a script or a CI step.
+
+`uv run pytest` matters for a different reason. Bare `pytest` in an unactivated shell resolves through `PATH` to whatever version happens to be on the system, quietly testing your code with the wrong tool. Prefixing with `uv run` guarantees the project's own copy, the one recorded in `uv.lock`.
+
+Two behaviors sit underneath all of these. Before running anything, `uv run` brings the environment up to date, installing whatever the lockfile requires but leaving unlisted strays in place — the *inexact* sync described in Section 11. That is what makes it self-healing: a deleted `.venv` or a dependency someone else added is repaired on the next invocation rather than reported as an error. And `--with` is the exception to the rule that everything must be declared, supplying a package for a single command through a temporary overlay that touches neither `pyproject.toml` nor the project environment. Reach for it when you want to try a library once, and for `uv add` the moment you want to keep it.
+
 **Notes:**
 - On Windows PowerShell, manual activation (`.venv\Scripts\Activate.ps1`) can fail with an execution-policy error — that is a Windows default, not a broken setup. Either run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` once, or simply prefer `uv run`, which never triggers it.
 - Inside an activated environment, bare `python` resolves to the project interpreter. Outside it, `python` resolves to whatever is on PATH — usually the base interpreter.
 
 ---
 
-## 6. Select the Interpreter in the Editor
+## 7. Select the Interpreter in the Editor
 
 ```bash
 code .
@@ -278,7 +346,7 @@ This is what makes the editor immune to "which Python is it using?" confusion. B
 
 ---
 
-## 7. Create and Manage the Virtual Environment
+## 8. Create and Manage the Virtual Environment
 
 By this point you have initialized a project, added dependencies, and run code, and at no stage did you create a virtual environment. One exists anyway. `uv add`, `uv run`, and `uv sync` each create the `.venv` on demand if it is missing, which is why the preceding sections never mention it: **in normal project work you do not run the command below at all.**
 
@@ -286,7 +354,7 @@ By this point you have initialized a project, added dependencies, and run code, 
 uv venv
 ```
 
-It is worth knowing regardless, for three reasons. Running it explicitly makes a step visible that is otherwise silent — the fastest way to see what the rest of the guide is describing. The pip interface (Section 4) genuinely does need an environment created first, since it has no project to infer one from. And the flags below are how you build an environment somewhere other than `.venv`, or on an interpreter other than the pinned one.
+It is worth knowing regardless, for three reasons. Running it explicitly makes a step visible that is otherwise silent — the fastest way to see what the rest of the guide is describing. The pip interface (Section 5) genuinely does need an environment created first, since it has no project to infer one from. And the flags below are how you build an environment somewhere other than `.venv`, or on an interpreter other than the pinned one.
 
 Whichever way it comes into being, `.venv` is the project's isolated virtual environment, and it always holds the same things:
 
@@ -309,7 +377,7 @@ uv venv my-env             # create it under a different name
 
 A non-default name is occasionally useful — keeping two environments side by side to check a library against two Python versions, for instance. The cost is that uv and your editor stop finding it automatically, so you have to point at it every time. For ordinary work, leave it as `.venv`.
 
-If the requested version is not installed, uv downloads it. One trap worth naming: `uv venv --python 3.12` builds *this* environment on 3.12 but does not rewrite `.python-version`, so the next command that recreates the environment goes back to the pinned version. To change the project's Python durably, use `uv python pin`, covered with the rest of the version rules in Section 12.
+If the requested version is not installed, uv downloads it. One trap worth naming: `uv venv --python 3.12` builds *this* environment on 3.12 but does not rewrite `.python-version`, so the next command that recreates the environment goes back to the pinned version. To change the project's Python durably, use `uv python pin`, covered with the rest of the version rules in Section 14.
 
 ### Activating and deactivating
 
@@ -328,7 +396,7 @@ deactivate
 
 `deactivate` restores the `PATH` you had before and does nothing else. It is not a cleanup step and it deletes nothing — the environment is still on disk, ready for the next activation.
 
-You can also skip activation entirely. `uv run` executes a command inside the environment without altering your shell, which is why Section 5 recommends it as the default habit. Activation is still worth understanding, because every older tutorial assumes it and because a long session of many commands is more comfortable inside an activated shell than with `uv run` typed on every line.
+You can also skip activation entirely. `uv run` executes a command inside the environment without altering your shell, which is why Section 6 recommends it as the default habit. Activation is still worth understanding, because every older tutorial assumes it and because a long session of many commands is more comfortable inside an activated shell than with `uv run` typed on every line.
 
 ### Deleting and rebuilding
 
@@ -351,7 +419,7 @@ This costs almost nothing. The rebuild links from the shared cache rather than t
 
 ---
 
-## 8. The Full File and Folder Layout
+## 9. The Full File and Folder Layout
 
 After the steps above, the project looks like this:
 
@@ -372,14 +440,15 @@ myproject/
 What gets committed is everything except `.venv` and other ignored artifacts. So `pyproject.toml`, `uv.lock`, your code, the README, and `.python-version` are all committed. The `.venv` is excluded because it is large, machine specific, and fully rebuildable from the recipe.
 
 **Notes:**
+- This is the layout of a single project. A repository holding two components that need separate dependency lists is a different shape, covered in Section 13.
 - A `.venv` contains real, working packages (so the environment actually runs), but those package files are usually hard-links to the cache rather than fresh copies, so they cost almost no extra disk space.
 - The interpreter is a pointer, not a copy. Ten projects on the same Python version all reference one installed interpreter.
 
 ---
 
-## 9. Anatomy of the Generated Files
+## 10. Anatomy of the Generated Files
 
-Section 8 listed the files. This section opens the ones you actually read and edit, so the abstract "recipe" becomes concrete. The rule of thumb: you hand-edit `pyproject.toml` (and occasionally `.gitignore`), while everything else is generated and left alone.
+Section 9 listed the files. This section opens the ones you actually read and edit, so the abstract "recipe" becomes concrete. The rule of thumb: you hand-edit `pyproject.toml` (and occasionally `.gitignore`), while everything else is generated and left alone.
 
 ### pyproject.toml — the project recipe
 
@@ -410,8 +479,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.0",
-    "ruff>=0.6.0",
+    "pytest>=9.0.0",
+    "ruff>=0.15.0",
 ]
 ```
 
@@ -452,7 +521,13 @@ dependencies = [
     { name = "idna" },
     { name = "urllib3" },
 ]
+sdist = { url = "https://files.pythonhosted.org/.../requests-2.32.3.tar.gz", hash = "sha256:5536541773..." }
+wheels = [
+    { url = "https://files.pythonhosted.org/.../requests-2.32.3-py3-none-any.whl", hash = "sha256:70761cfe03..." },
+]
 ```
+
+Three things are recorded per package, and they map onto the three reasons the file exists. `version` is the exact release chosen. `dependencies` names what that release drags in, so the transitive graph is written down rather than rediscovered. And `sdist` and `wheels` name the downloadable artifacts with a digest for each, which is where the hash guarantee below comes from. The excerpt above is abbreviated: real URLs and digests are full length, and each artifact also carries its size.
 
 It is generated and maintained by uv (on `uv add`, `uv lock`, and `uv sync`). You never hand-edit it, and you always commit it. This division of labor is the key idea: `pyproject.toml` says what is acceptable, `uv.lock` says what was actually chosen.
 
@@ -462,7 +537,7 @@ The word uv's own documentation uses for the file is *universal*, and it is wort
 
 - **Constraints are not versions.** `requests>=2.32.0` describes a *set* of acceptable releases, not one release. Two people running `uv sync` six months apart both satisfy that constraint and both get different code. Reproducibility needs a single answer, and a constraint cannot provide one.
 - **Transitive dependencies are recorded nowhere else.** `uv add requests` writes exactly one line into `pyproject.toml`, yet installing it pulls in `certifi`, `idna`, `urllib3`, and more. Those indirect packages are the ones most likely to break you — and the recipe has no record that they even exist. `uv.lock` names every one at an exact version.
-- **A lockfile carries hashes.** Entries record what a package's contents should be, which is why `uv export` can emit a hash-checked `requirements.txt`, and why a corrupted or tampered download fails the install instead of quietly running.
+- **A lockfile carries hashes.** The `sdist` and `wheels` digests above record what each artifact's contents must be, which is why `uv export` can emit a hash-checked `requirements.txt`, and why a corrupted or tampered download fails the install instead of quietly running.
 
 The one-line version: `pyproject.toml` can tell you what a project wants, and only `uv.lock` can reproduce what it had.
 
@@ -480,7 +555,7 @@ uv reads it to decide which interpreter this project uses. Write it with `uv pyt
 uv python pin 3.12
 ```
 
-Commit it. It is what lets a clone land on the interpreter you actually developed against, and Section 10 covers what happens when it is missing. Section 12 is where this file sits in the wider set of rules uv uses to pick a version.
+Commit it. It is what lets a clone land on the interpreter you actually developed against, and Section 11 covers what happens when it is missing. Section 14 is where this file sits in the wider set of rules uv uses to pick a version.
 
 ### .gitignore — what stays out of version control
 
@@ -499,7 +574,7 @@ wheels/
 .venv
 ```
 
-The important line is `.venv`. The environment is excluded because it is large and fully rebuildable from `pyproject.toml` and `uv.lock`. It is belt and braces rather than the only defense — the environment also carries an internal `.gitignore` of its own, as Section 7 noted. Add your own patterns here as the project grows (for example `.env` for secrets, covered when you start integrating APIs).
+The important line is `.venv`. The environment is excluded because it is large and fully rebuildable from `pyproject.toml` and `uv.lock`. It is belt and braces rather than the only defense — the environment also carries an internal `.gitignore` of its own, as Section 8 noted. Add your own patterns here as the project grows (for example `.env` for secrets, covered when you start integrating APIs).
 
 ### main.py and README.md — the starter content
 
@@ -536,7 +611,7 @@ A quick summary of how to treat each generated file:
 
 ---
 
-## 10. Cloning and Rebuilding
+## 11. Cloning and Rebuilding
 
 This is the payoff of the whole structure. Anyone, including future you on a new machine, can rebuild the exact environment with one command after cloning:
 
@@ -555,7 +630,7 @@ The clone arrives with `pyproject.toml`, `uv.lock`, and `.python-version`, but n
 3. **Creates `.venv`** against that interpreter.
 4. **Installs the exact versions recorded in `uv.lock`**, hard-linked from the cache, typically in seconds.
 
-So the honest setup procedure for a cloned project is `uv sync` and nothing else. After that, open the editor and select the `.venv` interpreter exactly as in Section 6.
+So the honest setup procedure for a cloned project is `uv sync` and nothing else. After that, open the editor and select the `.venv` interpreter exactly as in Section 7.
 
 Two flags matter once you want a guarantee rather than a convenience:
 
@@ -575,13 +650,13 @@ Not every repository is well kept. The cases you will actually meet:
 | `pyproject.toml` + `uv.lock` | `uv sync` | exact reproduction, the good case |
 | `pyproject.toml`, no `uv.lock` | `uv sync` | uv resolves fresh and writes a lockfile; commit it |
 | no `.python-version` | `uv sync` | uv falls back to the `requires-python` floor, so you may land on a different interpreter than the author used |
-| only `requirements.txt` | see Section 15 | import it with `uv add -r` to adopt the modern layout |
+| only `requirements.txt` | see Section 17 | import it with `uv add -r` to adopt the modern layout |
 
 The third row is the argument for committing `.python-version`. Without it, `requires-python = ">=3.10"` permits everything from 3.10 upward and your machine decides. Nothing visibly fails, which is the problem — the install succeeds, and you have quietly stopped testing what the author tested.
 
 ### Rebuilding an existing checkout
 
-The same command repairs a project you already have: delete `.venv` and run `uv sync`, as covered in Section 7. `uv sync --reinstall` is the gentler option, forcing packages to be reinstalled without removing the environment first.
+The same command repairs a project you already have: delete `.venv` and run `uv sync`, as covered in Section 8. `uv sync --reinstall` is the gentler option, forcing packages to be reinstalled without removing the environment first.
 
 ### uv lock vs uv sync
 
@@ -612,7 +687,7 @@ The flags also work directly on `uv sync` (for example `uv sync --upgrade-packag
 
 ---
 
-## 11. Durable vs Disposable
+## 12. Durable vs Disposable
 
 The single mental model to carry into every project:
 
@@ -625,7 +700,9 @@ The single mental model to carry into every project:
 Two one-directional rules make the separation safe:
 
 - Deleting from a **project** never affects the **cache** or the installed **interpreters**.
-- Clearing the cache or uninstalling an interpreter never affects an existing project's already-built `.venv` — that environment's hard-links keep its own files alive independently.
+- Clearing the **cache** never affects an existing project's already-built `.venv`. That environment's hard-links keep its own package files alive independently of the cached originals.
+
+The interpreter is the one place this symmetry breaks, and it follows from Section 8: a `.venv` holds a *pointer* to the base installation rather than a copy of it. Uninstalling a Python version therefore does break every environment built on it — the launcher resolves to something that is no longer there. Nothing durable is lost, since `uv sync` re-downloads the version and rebuilds, but it is the one removal that costs more than disk space.
 
 **Notes:**
 - A project's whole lifecycle follows from this table: initialize, add what you need, select the interpreter, build and run, commit the durable files. The `.venv` can be discarded at any point.
@@ -633,7 +710,100 @@ Two one-directional rules make the separation safe:
 
 ---
 
-## 12. Multiple Python Versions
+## 13. Multiple Components in One Repository
+
+Everything so far has assumed one project: one `pyproject.toml`, one `.venv`, one dependency list. Repositories frequently hold more than that — exploratory notebooks at the top level with a web application in a subfolder, or a service alongside the library it imports. The question is whether those parts share one environment or each get their own, and uv answers it entirely by where it finds `pyproject.toml` files.
+
+### How uv decides what the project is
+
+uv does not treat your current directory as the project. It walks upward from the working directory, checking it and each parent for a `pyproject.toml`, and the first one it finds is the project. `.python-version` is discovered the same way, which is why Section 14's priority table says "the project, or the nearest parent directory".
+
+The practical consequence is that a project at the repository root serves every subfolder beneath it:
+
+```text
+myrepo/
+├── .venv/                  # one environment, at the root
+├── pyproject.toml          # one recipe, at the root
+├── uv.lock
+├── analysis.ipynb
+└── webapp/
+    └── app.py              # no pyproject.toml of its own
+```
+
+Running `uv run uvicorn app:app` from inside `webapp/` finds the root project, uses the root `.venv`, and behaves exactly as it would from the root. Nothing extra is required, and there is no second environment to keep in step.
+
+### When one project is the right answer
+
+Sharing a single environment is the simpler arrangement and usually the correct one. It fits when the parts are developed together and their dependencies do not fight. Four consequences are worth knowing before you commit to it:
+
+- **One dependency set, one resolution.** Both halves draw from the same `dependencies` list and the same lockfile, so a version conflict between them has no escape hatch. Notebook-only tooling can at least be held apart with `uv add --dev ipykernel`, keeping it out of what a consumer of the project would install.
+- **Imports are not automatic.** A default application carries no `[build-system]` table, so the project is never installed into its own `.venv`. A statement like `from webapp import app` therefore depends on the working directory and `sys.path` rather than on the environment. When the parts genuinely need to import each other, create the project with `uv init --package` so it becomes installable, or move to a workspace.
+- **Notebooks run from their own folder.** Most editors set a notebook's working directory to the notebook's location rather than the project root, which is why a relative path that works in a script fails in a notebook sitting one level down. Resolve paths from a known anchor instead.
+- **Deployment carries everything.** A container built from one shared environment ships the notebook stack alongside the web application. If only one part is ever deployed, that is an argument for splitting.
+
+### When a subfolder needs a project of its own
+
+Add a `pyproject.toml` to `webapp/` and the discovery rule above changes the answer. uv stops at the nearest one, treats `webapp/` as its own project with its own `.venv` and its own lockfile, and ignores the root entirely. That switch happens silently, with no warning that the root has stopped governing, which makes it a genuine surprise the first time.
+
+If the two really are separate concerns, declare the arrangement instead of stumbling into it. Add a workspace table to the root `pyproject.toml`:
+
+```toml
+[tool.uv.workspace]
+members = ["webapp", "packages/*"]
+exclude = ["packages/scratch"]
+```
+
+Each member keeps its own `pyproject.toml` with its own dependencies, while the workspace shares a single `uv.lock` and a single `.venv` at the root. `members` is required and `exclude` is optional, both take globs, every directory a glob matches must contain a `pyproject.toml`, and the root counts as a member itself.
+
+The commands shift slightly once a workspace exists:
+
+| Task | Command |
+| :--- | :--- |
+| Lock the entire workspace at once | `uv lock` |
+| Sync the root member | `uv sync` |
+| Sync every member together | `uv sync --all-packages` |
+| Run a command inside one member | `uv run --package webapp uvicorn app:app` |
+| Add a dependency to one member | `cd webapp` then `uv add fastapi` |
+
+For one member to depend on another, name it as a dependency and point uv at the workspace rather than at a package index:
+
+```toml
+[project]
+dependencies = ["shared-lib"]
+
+[tool.uv.sources]
+shared-lib = { workspace = true }
+```
+
+Dependencies between members are installed as editable, so an edit inside the library is visible to the application immediately with no reinstall step.
+
+### Choosing between the three layouts
+
+| Layout | Use when |
+| :--- | :--- |
+| One project, plain subfolders | the parts share a dependency set and are always developed and deployed together |
+| A workspace | the parts need distinct dependency lists, import one another, or deploy separately |
+| Separate projects | the parts are unrelated, or their requirements genuinely conflict |
+
+The third row is the one uv's own documentation is firm about. Workspaces are not meant for members with conflicting requirements, and not for members that each want an environment of their own. A workspace resolves to a single `requires-python` for everything, taken as the intersection of all members' values, so a member needing an older Python than the rest cannot be accommodated at all. When that is the situation, separate projects joined by path dependencies give you the isolation a workspace deliberately refuses:
+
+```toml
+[tool.uv.sources]
+shared-lib = { path = "../shared-lib", editable = true }
+```
+
+The trade is that `uv run --package` is no longer available, so each command has to be run from the relevant directory.
+
+**Notes:**
+- `uv init` inside an existing project adds the new directory as a workspace member automatically, creating the `[tool.uv.workspace]` table if there is not one yet. Convenient, and occasionally surprising.
+- Point the editor at the repository root rather than a subfolder. Opened at `webapp/`, the interpreter picker will not offer a `.venv` that lives one level up.
+- Plain `uv sync` at a workspace root syncs the root member only, and because it is exact by default it will uninstall other members' packages. Use `--all-packages` when you want everything present at once.
+- A root that exists only to organize the members can drop its `[project]` table entirely and keep just `[tool.uv.workspace]`. Such a virtual root has no dependencies of its own and is never published.
+- Python cannot enforce dependency isolation, so uv cannot guarantee that one member only imports what it declared. A member may import a package another member pulled in and appear to work until it is built alone.
+
+---
+
+## 14. Multiple Python Versions
 
 Projects run on different Python versions side by side with no conflict — the ordinary way to keep one project on 3.12 because a library has not caught up, while everything else moves to 3.14. Each interpreter is stored once in uv's central store and shared by every project that asks for it. This section collects the rules for controlling which one a project gets.
 
@@ -647,9 +817,9 @@ Several sources can have an opinion. uv resolves them in this order:
 | 2 | `.python-version` in the project, or the nearest parent directory | the project, and travels with the repository |
 | 3 | `.python-version` in your user configuration directory | every project on this machine without a pin of its own |
 | 4 | `requires-python` in `pyproject.toml` | a floor rather than a choice: the first compatible version wins |
-| 5 | uv's discovery order | whatever the machine offers, by the rules in Section 3 |
+| 5 | uv's discovery order | whatever the machine offers, by the rules in Section 4 |
 
-uv looks for `.python-version` in the working directory and each of its parents, stopping at the boundary of the project (or, in a repository holding several related packages, the workspace containing them), then falling back to the user configuration directory. Rather than reasoning through the table, you can simply ask:
+uv looks for `.python-version` in the working directory and each of its parents, stopping at the boundary of the project (or, in a repository holding several related packages, the workspace containing them, as Section 13 describes), then falling back to the user configuration directory. Rather than reasoning through the table, you can simply ask:
 
 ```bash
 uv python find
@@ -657,34 +827,77 @@ uv python find
 
 The distinction between the top two rows is the one that catches people out. `uv run --python 3.11 main.py` runs once on 3.11 and changes nothing on disk, which makes it the right tool for a quick compatibility check against another version. `uv python pin 3.11` changes the project for everyone who clones it.
 
+### Seeing what is available
+
+Before pinning, installing, or removing anything, the useful first move is to look at what the machine already has and what uv could fetch:
+
+```bash
+uv python list
+```
+
+The output is two columns. The left names an exact build; the right is either the path where that build lives or a marker saying it is available to download:
+
+```text
+cpython-3.14.0-linux-x86_64-gnu   <download available>
+cpython-3.13.6-linux-x86_64-gnu   <download available>
+cpython-3.12.11-linux-x86_64-gnu  /home/you/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/bin/python3.12
+cpython-3.10.12-linux-x86_64-gnu  /usr/bin/python3.10
+cpython-3.10.12-linux-x86_64-gnu  /usr/bin/python3 -> python3.10
+pypy-3.11.13-linux-x86_64-gnu     <download available>
+```
+
+Read the left column as implementation, version, operating system, architecture, and the C library it was built against — `gnu` or `musl` on Linux, and `none` where the field does not apply. `cpython` is the standard implementation; `pypy` and `graalpy` are alternatives uv can also install. Special builds appear as a suffix on the version instead, so a free-threaded 3.14 shows up as `cpython-3.14.0+freethreaded-...`. The right column is what makes the listing useful: a path means the interpreter is on the machine right now, and `<download available>` means it is one command away.
+
+That path column is also where the trap named in the notes below becomes visible. The last two `3.10.12` rows are one interpreter listed twice, once under its real name and once under a `python3` shim pointing at it. Rows are not installations. Count distinct versions in the left column, and read the arrows in the right one.
+
+Four commands cover the questions you will actually ask here:
+
+| Command | Answers |
+| :--- | :--- |
+| `uv python list` | what is here, plus everything I could download |
+| `uv python list --only-installed` | what is already on this machine, nothing else |
+| `uv python list --all-versions` | every patch release, not just the newest of each minor |
+| `uv python find` | which single interpreter *this directory* would actually use |
+
+The default view hides old patch releases and builds for other operating systems, which is why the list is readable at all. `--only-installed` is the one to reach for when auditing, and it is the form used in Section 16 for deciding what is safe to uninstall. `uv python find` answers a different question from all three: not what exists, but what the resolution rules above have settled on here and now.
+
 ### Installing and upgrading versions
 
 ```bash
-uv python list --only-installed     # show installed interpreters
 uv python install 3.12              # install a version explicitly
 ```
 
 Explicit installation is rarely necessary, since any command that needs a missing version downloads it. It is worth doing when you want the download to happen now rather than in the middle of something else — before boarding a flight, say.
 
+This is also the place to be precise about what `uv python pin` does, because the two commands are easy to conflate. `uv python pin 3.12` writes `3.12` into `.python-version` and checks the request against `requires-python`, and that is the whole of it. It does not download an interpreter, it does not rebuild `.venv`, and it does not touch `pyproject.toml`. If 3.12 is not installed, the pin still succeeds and nothing else happens until the next command that needs a real interpreter, at which point uv downloads it. The clean sequence for switching a project's Python is therefore:
+
+```bash
+uv python pin 3.12    # record the decision
+uv sync               # acquire the interpreter if needed, rebuild .venv against it
+```
+
+If `requires-python` still says `>=3.14`, uv will not accept the pin quietly — it errors, or warns and then fails at the next `uv sync`, so a version change usually means editing that bound too. This is the one legitimate reason to hand-edit `pyproject.toml` during a version change, and the edit is why the `uv sync` above is doing real work rather than repeating itself.
+
 Patch versions have a subtlety of their own. A pin of `3.12` is a request for any `3.12.x`, and uv will not fetch a newer patch on its own. When you do upgrade, existing environments follow without being rebuilt:
 
 ```bash
-uv python upgrade 3.12
+uv python upgrade 3.12    # one minor version
+uv python upgrade         # every uv-managed version
 ```
 
-uv keeps each managed interpreter behind a minor-version directory that points at the current patch, so an environment built on `3.12` starts using `3.12.11` transparently. The exception is an environment created against an explicit patch, such as `uv venv --python 3.10.8`, which stays exactly where it was put. Minor versions never upgrade this way — moving from 3.12 to 3.13 can change dependency resolution, so uv makes you ask for it.
+Treat this one as provisional. uv's documentation still marks patch upgrading as a *preview* feature, meaning the behavior is experimental and may change, so verify it against the docs before building a routine around it. As currently implemented, uv keeps each managed interpreter behind a minor-version directory that points at the current patch, so an environment built on `3.12` starts using `3.12.11` transparently. The exception is an environment created against an explicit patch, such as `uv venv --python 3.10.8`, which stays exactly where it was put. Minor versions never upgrade this way — moving from 3.12 to 3.13 can change dependency resolution, so uv makes you ask for it.
 
-Deleting a project does not remove the version it used. The interpreter lives outside the project, so it stays installed and ready — exactly like the cache. Section 14 covers removing versions you no longer want.
+Deleting a project does not remove the version it used. The interpreter lives outside the project, so it stays installed and ready — exactly like the cache. Section 16 covers removing versions you no longer want.
 
 **Notes:**
-- A listing tool may show one interpreter under several path names — a real install plus shims like `python`, `python3`, and a "latest patch" alias. Count distinct versions, not paths. Five rows can all be the same single version.
+- Other tools list interpreters too, and they share the shim problem shown above: `python`, `python3`, and a "latest patch" alias can all be one install. Count distinct versions wherever you are reading.
 - Disk cost of an extra version is a one-time interpreter download, shared afterward. Idle RAM cost is zero, since only a running process uses memory.
 - A new Python version is the one case that genuinely downloads something new. A new package version downloads once and then re-links.
 - `uv python pin --global` sets a fallback for every project on the machine that has no pin of its own — the fix for repeatedly landing on a version you did not want.
 
 ---
 
-## 13. The Shared Cache
+## 15. The Shared Cache
 
 When a package is added, uv downloads it once into a central cache and then hard-links it into the project. A hard-link is a second name for the same bytes on disk, not a second copy — so many projects "having" the same package version share one set of bytes.
 
@@ -703,9 +916,9 @@ uv cache clean       # empty the cache (rarely needed)
 
 ---
 
-## 14. Cleaning Up and Reclaiming Disk Space
+## 16. Cleaning Up and Reclaiming Disk Space
 
-Sections 13 and 14 established that interpreters and cached packages deliberately outlive the projects that pulled them in. That is the right default while you are working. Across a few years of projects it also means uv accumulates storage in three places you never explicitly chose, so knowing how to audit and reclaim them is the closing stage of the lifecycle.
+Sections 14 and 15 established that interpreters and cached packages deliberately outlive the projects that pulled them in. That is the right default while you are working. Across a few years of projects it also means uv accumulates storage in three places you never explicitly chose, so knowing how to audit and reclaim them is the closing stage of the lifecycle.
 
 ### Where the space actually goes
 
@@ -727,7 +940,7 @@ Deleting the project folder is the entire cleanup:
 rm -rf myproject
 ```
 
-The `.venv` lives inside the folder, so it goes with it, and nothing else on the machine is affected. That is exactly the guarantee Section 11 described.
+The `.venv` lives inside the folder, so it goes with it, and nothing else on the machine is affected. That is exactly the guarantee Section 12 described.
 
 What this does **not** do is shrink the cache. The packages that project used stay cached at full size, and neither `uv cache clean` nor `uv cache prune` takes a project as an argument, so there is no command that means "remove everything only this deleted project needed". Reclamation is a cache-level operation, not a per-project one. The productive way to read that is as a deliberate speed-up: those entries are already paid for, and the next project wanting the same packages installs them instantly.
 
@@ -750,7 +963,7 @@ uv cache clean requests   # remove entries for one package
 
 `uv cache clean` empties the cache completely. Reach for it when you suspect cache corruption, or when you need the space immediately and accept that the next install of everything re-downloads. The single-package form is the more useful one day to day, for forcing a fresh fetch of one misbehaving dependency.
 
-Neither command harms an existing `.venv`. Those environments hold hard-links to the package files, so the underlying bytes survive as long as an environment still references them and the projects keep working after the cache is gone.
+Neither command harms an existing `.venv`. Those environments hold hard-links to the package files, so the bytes survive as long as an environment still references them, and the projects keep working after the cache is gone.
 
 ### Removing interpreters and tools
 
@@ -762,7 +975,7 @@ uv tool list
 uv tool uninstall ruff
 ```
 
-Interpreters are the one category worth being conservative about. Each is a modest one-time download, each is shared by every project requesting that version, and removing one that a project still pins means only that the next `uv sync` downloads it again — a wasted minute, not a broken project. List first, and remove only versions that nothing pins.
+Interpreters are the one category worth being conservative about. Each is a modest one-time download and each is shared by every project requesting that version, so there is little to reclaim. Removing one also reaches into projects you are not thinking about: any existing `.venv` built on that version points at the installation you just deleted and stops working until `uv sync` rebuilds it. Nothing durable is lost, but the cost is other projects' environments rather than a wasted minute. List first, and remove only versions that nothing pins.
 
 ### A full decommission
 
@@ -783,7 +996,7 @@ uv python list --only-installed      # audit interpreters nothing pins
 
 ---
 
-## 15. The Older Way: requirements.txt
+## 17. The Older Way: requirements.txt
 
 Before `pyproject.toml` and `uv.lock` became the standard, projects listed their dependencies in a plain-text `requirements.txt`. You will still meet it constantly — in older tutorials, legacy repositories, and deployment targets that expect it. uv reads and writes the format, so you can interoperate with it without leaving the modern workflow.
 
@@ -855,9 +1068,10 @@ To take over an older project that tracks dependencies in `requirements.txt`, im
 
 ```bash
 uv init --bare              # add a minimal pyproject.toml, leave existing files alone
-uv add -r requirements.txt  # import deps into [project].dependencies (use --dev for a dev file)
-uv sync                     # resolve, write uv.lock, and build the .venv
+uv add -r requirements.txt  # import deps, write uv.lock, and build the .venv
 ```
+
+Two commands, not three. A trailing `uv sync` is a common addition here and it does nothing: `uv add` resolves, writes `uv.lock`, and installs into `.venv` as part of running, exactly as the table in Section 5 records. Running sync afterwards re-checks an environment that already matches the lockfile and reports no work. It is harmless, but it is not a step, and treating it as one obscures when `uv sync` is genuinely required — after a hand-edit to `pyproject.toml`, on a fresh clone, or after deleting the environment, all cases where something changed outside a uv command.
 
 The important choice here is `uv add -r` rather than `uv pip install -r`. The goal of migrating is to make `pyproject.toml` the source of truth, and only `uv add` records the dependencies there; `uv pip install -r` would merely install them into the environment and leave the recipe empty. Once this is done, `pyproject.toml` and `uv.lock` are authoritative. Retire the old `requirements.txt`, or keep regenerating it with `uv export` if a deploy target still expects it. A fuller, step-by-step walkthrough lives in the companion guide, [Anatomy of a Python Project](../python/python-project-anatomy.md).
 
@@ -892,7 +1106,7 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 
 ---
 
-## 16. Common Mistakes
+## 18. Common Mistakes
 
 **Installing project packages into the global interpreter.** A new project's `.venv` starts empty and is sealed off from the global Python, so packages added globally are not visible inside it. Keep the base interpreter pristine and add packages per project.
 
@@ -910,9 +1124,17 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 
 **Committing the `.venv` folder.** It is large, machine specific, and fully rebuildable. The default `.gitignore` excludes it; do not override that.
 
-**Assuming many listed Python paths mean many installs.** Tools may show one interpreter under several path names (shims and aliases). Count distinct versions, not rows.
+**Assuming many listed Python paths mean many installs.** `uv python list` prints one row per path that reaches an interpreter, so a single install appears several times behind shims and aliases. Count distinct versions in the left column, not rows.
 
 **Assuming `uv init` picked the newest Python.** Newest wins only among uv-managed interpreters. Falling back to system Python, uv takes the first compatible one on `PATH`, so a system `python3` of 3.10 beats a 3.13 sitting further down the path. Pass `uv init --python 3.12` whenever the version matters.
+
+**Expecting `uv python pin` to install the interpreter.** It writes `.python-version` and validates the request, nothing more. The download happens on the next command that needs a real interpreter, so follow a pin with `uv sync` if you want the environment on the new version now.
+
+**Running `uv sync` immediately after `uv add`.** `uv add` already resolves, locks, and installs. The trailing sync is a no-op that makes the pair look like two required steps. Save `uv sync` for when something changed outside a uv command.
+
+**Running `uv init` in a project you just cloned.** A repository with a `pyproject.toml` needs `uv sync`, not initialization. uv refuses the init, but the instinct to reach for it is the sign of a wrong mental model: the recipe already exists and you are rebuilding from it.
+
+**Dropping a `pyproject.toml` into a subfolder without declaring a workspace.** uv stops at the nearest one, so that folder silently becomes its own project with its own `.venv` and lockfile, and the root stops governing it. Declare `[tool.uv.workspace]` at the root when the split is intentional.
 
 **Changing the Python version by any route other than `uv python pin`.** Hand-editing `.python-version` risks the format, and `uv venv --python 3.12` builds one environment on 3.12 while leaving the pin untouched, so the next rebuild reverts. Pin it, and keep `requires-python` consistent.
 
@@ -930,7 +1152,7 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 
 ---
 
-## 17. Cheat Sheet
+## 19. Cheat Sheet
 
 **Creating and cloning**
 
@@ -939,6 +1161,7 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 | Create a new project | `uv init myproject` |
 | Create one on a specific Python version | `uv init --python 3.12 myproject` |
 | Add uv to an existing project | `uv init --bare` |
+| Adopt an existing `requirements.txt` project | `uv init --bare` then `uv add -r requirements.txt` |
 | Set up a freshly cloned project | `uv sync` |
 | Sync, failing if the lockfile drifted | `uv sync --locked` |
 | Sync straight from the lockfile | `uv sync --frozen` |
@@ -951,7 +1174,9 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 | Set a machine-wide fallback version | `uv python pin --global 3.12` |
 | Show which interpreter would be used | `uv python find` |
 | Run once on a different version | `uv run --python 3.11 main.py` |
-| List installed Python versions | `uv python list --only-installed` |
+| List installed versions and available downloads | `uv python list` |
+| List installed Python versions only | `uv python list --only-installed` |
+| List every patch release | `uv python list --all-versions` |
 | Install a Python version | `uv python install 3.12` |
 | Upgrade to the latest patch | `uv python upgrade 3.12` |
 | Remove an unused Python version | `uv python uninstall 3.12` |
@@ -978,7 +1203,11 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 | Add a dev-only tool | `uv add --dev pytest ruff` |
 | Add notebook support | `uv add ipykernel` |
 | Remove a dependency | `uv remove requests` |
-| Run a command in the environment | `uv run python main.py` |
+| Run a script in the environment | `uv run python main.py` |
+| Open a REPL in the environment | `uv run python` |
+| Check something with a one-liner | `uv run python -c "import requests"` |
+| Run a tool installed in the project | `uv run pytest` |
+| Run with a package added for this call only | `uv run --with rich python` |
 | Rebuild the environment from the recipe | `uv sync` |
 | Re-resolve and update the lockfile | `uv lock` |
 | Upgrade all dependencies | `uv lock --upgrade` |
@@ -989,6 +1218,17 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 | Export the lockfile to requirements.txt | `uv export --format requirements.txt --output-file requirements.txt` |
 | Open the project in the editor | `code .` |
 | Select the interpreter (editor) | Command palette → Python: Select Interpreter → the `.venv` entry |
+
+**Workspaces**
+
+| Task | Command |
+| :--- | :--- |
+| Declare a workspace | add `[tool.uv.workspace]` with `members` to the root `pyproject.toml` |
+| Lock the whole workspace | `uv lock` |
+| Sync every member at once | `uv sync --all-packages` |
+| Run a command in one member | `uv run --package webapp pytest` |
+| Add a dependency to one member | `cd webapp` then `uv add fastapi` |
+| Depend on a sibling member | `shared-lib = { workspace = true }` under `[tool.uv.sources]` |
 
 **Cleanup and storage**
 
@@ -1015,4 +1255,5 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 - *[Installing Python](https://docs.astral.sh/uv/guides/install-python/), managed interpreters*
 - *[Locking and syncing](https://docs.astral.sh/uv/concepts/projects/sync/), --locked, --frozen, and automatic locking*
 - *[Python versions](https://docs.astral.sh/uv/concepts/python-versions/), version discovery and pinning*
+- *[Using workspaces](https://docs.astral.sh/uv/concepts/projects/workspaces/), several packages in one repository*
 - *[Caching](https://docs.astral.sh/uv/concepts/cache/), the shared package cache*
