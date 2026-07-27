@@ -17,7 +17,7 @@ The examples target **Python 3.14** (the current stable series, 3.14.6 as of mid
 
 ## How to read this guide
 
-The sections move from the ground up: first how Python runs and how its objects work, then each data type in turn, then the constructs that combine them (control flow, functions, classes), then the parts that make programs robust (errors, files, modules, types), and finally a set of interview deep-dives into the mechanics behind common questions. The last four sections are pure reference: Common Mistakes, a rapid-fire interview Q&A, a Cheat Sheet, and a table of every keyword in the language.
+The sections move from the ground up: first how Python runs and how its objects work, then each data type in turn and the built-in functions that work across them, then the constructs that combine them (control flow, functions, classes), then the parts that make programs robust (errors, files, modules, types), and finally a set of interview deep-dives into the mechanics behind common questions. The last four sections are pure reference: Common Mistakes, a rapid-fire interview Q&A, a Cheat Sheet, and a table of every keyword in the language.
 
 Two mental models recur and are worth holding from the start. First, **everything in Python is an object**, including numbers, functions, and classes themselves, so the same rules about identity and references apply everywhere. Second, **a variable is a name bound to an object, not a box holding a value**, which is the single idea behind most of the "why did my list change?" surprises later in the guide.
 
@@ -33,7 +33,7 @@ Each section ends with a short **Notes** list of the things that trip people up 
 - [3. pip and the Package Ecosystem](#3-pip-and-the-package-ecosystem)
 - [4. Variables, Objects, and References](#4-variables-objects-and-references)
 
-**The Built-in Data Types**
+**Built-in Types and Functions**
 - [5. Numbers: int, float, complex, bool](#5-numbers-int-float-complex-bool)
 - [6. Strings](#6-strings)
 - [7. Lists](#7-lists)
@@ -42,46 +42,47 @@ Each section ends with a short **Notes** list of the things that trip people up 
 - [10. Dictionaries](#10-dictionaries)
 - [11. None and Truthiness](#11-none-and-truthiness)
 - [12. Type Conversion and Inspection](#12-type-conversion-and-inspection)
+- [13. Essential Built-in Functions](#13-essential-built-in-functions)
 
 **Operators and Control Flow**
-- [13. Operators](#13-operators)
-- [14. Conditionals and Pattern Matching](#14-conditionals-and-pattern-matching)
-- [15. Loops](#15-loops)
-- [16. Comprehensions](#16-comprehensions)
+- [14. Operators](#14-operators)
+- [15. Conditionals and Pattern Matching](#15-conditionals-and-pattern-matching)
+- [16. Loops](#16-loops)
+- [17. Comprehensions](#17-comprehensions)
 
 **Functions**
-- [17. Defining and Calling Functions](#17-defining-and-calling-functions)
-- [18. Parameters and Arguments](#18-parameters-and-arguments)
-- [19. Scope: LEGB, global, nonlocal](#19-scope-legb-global-nonlocal)
-- [20. Lambdas and Functional Tools](#20-lambdas-and-functional-tools)
-- [21. Closures and Decorators](#21-closures-and-decorators)
-- [22. Iterators and Generators](#22-iterators-and-generators)
+- [18. Defining and Calling Functions](#18-defining-and-calling-functions)
+- [19. Parameters and Arguments](#19-parameters-and-arguments)
+- [20. Scope: LEGB, global, nonlocal](#20-scope-legb-global-nonlocal)
+- [21. Lambdas and Functional Tools](#21-lambdas-and-functional-tools)
+- [22. Closures and Decorators](#22-closures-and-decorators)
+- [23. Iterators and Generators](#23-iterators-and-generators)
 
 **Object-Oriented Programming**
-- [23. Classes and Instances](#23-classes-and-instances)
-- [24. Methods: Instance, Class, Static](#24-methods-instance-class-static)
-- [25. Inheritance and the MRO](#25-inheritance-and-the-mro)
-- [26. Encapsulation and Properties](#26-encapsulation-and-properties)
-- [27. Dunder Methods](#27-dunder-methods)
-- [28. Dataclasses](#28-dataclasses)
+- [24. Classes and Instances](#24-classes-and-instances)
+- [25. Methods: Instance, Class, Static](#25-methods-instance-class-static)
+- [26. Inheritance and the MRO](#26-inheritance-and-the-mro)
+- [27. Encapsulation and Properties](#27-encapsulation-and-properties)
+- [28. Dunder Methods](#28-dunder-methods)
+- [29. Dataclasses](#29-dataclasses)
 
 **Robust Programs**
-- [29. Errors and Exceptions](#29-errors-and-exceptions)
-- [30. Files and Context Managers](#30-files-and-context-managers)
-- [31. Modules, Packages, and the Standard Library](#31-modules-packages-and-the-standard-library)
-- [32. Type Hints](#32-type-hints)
+- [30. Errors and Exceptions](#30-errors-and-exceptions)
+- [31. Files and Context Managers](#31-files-and-context-managers)
+- [32. Modules, Packages, and the Standard Library](#32-modules-packages-and-the-standard-library)
+- [33. Type Hints](#33-type-hints)
 
 **Interview Deep-Dives**
-- [33. Mutability, Identity, and Copying](#33-mutability-identity-and-copying)
-- [34. How Python Executes: CPython, Bytecode, the GIL](#34-how-python-executes-cpython-bytecode-the-gil)
-- [35. Async and Await](#35-async-and-await)
-- [36. Memory, Iteration, and Performance Habits](#36-memory-iteration-and-performance-habits)
+- [34. Mutability, Identity, and Copying](#34-mutability-identity-and-copying)
+- [35. How Python Executes: CPython, Bytecode, the GIL](#35-how-python-executes-cpython-bytecode-the-gil)
+- [36. Async and Await](#36-async-and-await)
+- [37. Memory, Iteration, and Performance Habits](#37-memory-iteration-and-performance-habits)
 
 **Reference**
-- [37. Common Mistakes](#37-common-mistakes)
-- [38. Interview Quick-Fire](#38-interview-quick-fire)
-- [39. Cheat Sheet](#39-cheat-sheet)
-- [40. Keyword Reference](#40-keyword-reference)
+- [38. Common Mistakes](#38-common-mistakes)
+- [39. Interview Quick-Fire](#39-interview-quick-fire)
+- [40. Cheat Sheet](#40-cheat-sheet)
+- [41. Keyword Reference](#41-keyword-reference)
 
 ---
 
@@ -262,7 +263,7 @@ a = a + 1          # makes a NEW int 6 and rebinds a; b still points at 5
 print(a, b)        # 6 5
 ```
 
-With mutable objects, an in-place change is visible through every name bound to that object, which is the behavior the list example above showed. Section 33 returns to this with copying and function-argument behavior — the places it matters most.
+With mutable objects, an in-place change is visible through every name bound to that object, which is the behavior the list example above showed. Section 34 returns to this with copying and function-argument behavior — the places it matters most.
 
 The `del` statement is the exact inverse of binding. It removes a **name** from its namespace rather than destroying the object, so the object survives for as long as any other name still refers to it. A second, unrelated use of the same keyword deletes an item out of a container:
 
@@ -415,7 +416,7 @@ print("file.py".endswith(".py"))        # True
 print("hello".replace("l", "L"))        # heLLo
 ```
 
-Because strings are immutable, `s += piece` conceptually builds a new string every step. CPython hides much of that cost with an in-place resize when the string has only one reference, but that optimization is fragile and implementation-specific, so the durable idiom is to collect the parts in a list and `join` once (Section 37 has the measurements).
+Because strings are immutable, `s += piece` conceptually builds a new string every step. CPython hides much of that cost with an in-place resize when the string has only one reference, but that optimization is fragile and implementation-specific, so the durable idiom is to collect the parts in a list and `join` once (Section 38 has the measurements).
 
 ```python
 parts = []
@@ -507,7 +508,7 @@ print(grid)           # [[9, 0, 0], [0, 0, 0]]
 - Mutating methods (`append`, `sort`, `reverse`, `extend`) return `None`. `x = my_list.sort()` leaves `x` as `None`. Use `sorted()` when you want a returned value.
 - `append` adds one element; `extend` adds each element of an iterable. `[1,2].append([3,4])` gives `[1,2,[3,4]]`, while `extend` gives `[1,2,3,4]`.
 - `[[0]*3]*2` aliases the inner list. Build grids with a comprehension so each row is independent.
-- Slicing returns a new (shallow) list, so `b = a[:]` is a quick shallow copy. Nested objects are still shared (see Section 33).
+- Slicing returns a new (shallow) list, so `b = a[:]` is a quick shallow copy. Nested objects are still shared (see Section 34).
 
 ---
 
@@ -778,7 +779,37 @@ print(isinstance(42, (int, float)))   # True   accepts a tuple of types
 
 `isinstance` is preferred in real code because it respects inheritance — which is how polymorphism is meant to work. Reserve exact `type(...) is ...` checks for the rare case where a subclass genuinely must be rejected.
 
+`type` answers only the first of the three questions you have about an unfamiliar object. The other two are answered by `dir`, which lists the names an object carries, and `help`, which prints the documentation for any of them. Used in that order they form the standard exploration loop: what is this, what can it do, how do I call it. Most of the time this is faster than searching the documentation — it reports what your actual object supports on your actual Python version.
+
+```python
+from fractions import Fraction
+f = Fraction(3, 4)
+
+print(type(f))            # <class 'fractions.Fraction'>
+
+# dir returns every attribute name, sorted; filter the dunders for the public API
+print([n for n in dir(f) if not n.startswith("_")])
+# ['as_integer_ratio', 'conjugate', 'denominator', 'from_decimal', 'from_float',
+#  'imag', 'is_integer', 'limit_denominator', 'numerator', 'real']
+```
+
+Once `dir` has given you a name worth using, `help` explains it. Pass the object itself rather than the result of calling it:
+
+```python
+help(f.limit_denominator)
+# Help on method limit_denominator in module fractions:
+#
+# limit_denominator(max_denominator=1000000) method of fractions.Fraction instance
+#     Closest Fraction to self with denominator at most max_denominator.
+```
+
+Both have a bare form meant for the REPL. `dir()` with no argument lists the names bound in the current scope, and `help()` with no argument opens an interactive session you leave with `quit`. Neither belongs in a script: `help` prints to standard output and returns `None`, so when a program needs the text itself, read `obj.__doc__` instead.
+
 **Notes:**
+- `type`, `dir`, `help` is the exploration loop for an unknown object: what is it, what can it do, how do I use it.
+- `dir` returns names as strings, not values, and includes every dunder. Filter with `[n for n in dir(x) if not n.startswith("_")]` to see the public surface.
+- Pass `help` the object, not a call. `help(len)` documents the function; `help(len([1]))` documents the integer `1`.
+- `help` reads the docstrings introduced in Section 18, so documenting your own functions makes them explorable in exactly the same way.
 - Conversion is explicit. There is no automatic `"3" + 5`; you convert one side first.
 - `int("3.14")` fails. Parse a decimal string with `int(float("3.14"))`, accepting the truncation.
 - Prefer `isinstance(x, T)` over `type(x) == T`. `isinstance` accepts subclasses and a tuple of types, and it is the standard idiom.
@@ -786,7 +817,96 @@ print(isinstance(42, (int, float)))   # True   accepts a tuple of types
 
 ---
 
-## 13. Operators
+## 13. Essential Built-in Functions
+
+Python ships about seventy-five built-in callables — plain functions like `len` alongside the type constructors like `int` — and they are available in every scope without an import because they live in the `builtins` module, the last link in the LEGB lookup chain covered in Section 20. Most of them you will rarely touch. The ones below are the general-purpose tools that work across the types introduced so far, and the table at the end of the section says where the rest are explained.
+
+**Sizing.** `len` returns the number of items in a container. It is O(1) for every built-in type — a list, string, dict, or set stores its own length rather than counting on demand. What it cannot do is measure something that has not been produced yet:
+
+```python
+print(len("hello"))            # 5
+print(len([1, 2, 3]))          # 3
+print(len({"a": 1, "b": 2}))   # 2   dicts count keys
+
+# len(n for n in range(3))
+# TypeError: object of type 'generator' has no len()
+```
+
+That error carries the real lesson: a generator has no length because its items do not exist yet. If you need the count, materialize it with `list(...)` first and accept the memory cost. `len` also works on your own classes the moment you define `__len__`, which Section 28 covers.
+
+**Aggregating.** `sum`, `min`, and `max` reduce an iterable to a single value. `min` and `max` accept the same `key` function that `sorted` does, plus a `default` for the empty case:
+
+```python
+nums = [4, 1, 9, 2]
+print(sum(nums))                # 16
+print(sum(nums, 100))           # 116   the second argument is the starting value
+print(min(nums), max(nums))     # 1 9
+print(max(["kiwi", "banana", "fig"], key=len))   # banana
+print(max([], default=None))    # None   without default this raises ValueError
+
+# sum(["a", "b"], "")
+# TypeError: sum() can't sum strings [use ''.join(seq) instead]
+```
+
+**Boolean reductions.** `any` is `True` when at least one item is truthy; `all` is `True` when every item is. Both short-circuit, so pairing them with a generator expression stops at the first decisive item instead of building a whole list first.
+
+```python
+print(any([0, 1, 0]), all([0, 1, 0]))   # True False
+print(any([]), all([]))                 # False True
+print(any(n > 10 for n in [3, 20, 5]))  # True   stops as soon as it sees 20
+```
+
+`all([])` being `True` catches almost everyone out. The rule is **vacuous truth**: an empty collection contains no item that fails the test, so the claim holds by default. `any([])` is `False` for the mirror-image reason, since there is no item that passes. Interviewers like this one because the answer sounds wrong until you can state the rule behind it.
+
+**Two string forms.** Every object can produce two text representations. `str` is the readable one meant for users, and it is what `print` calls. `repr` is the unambiguous one meant for developers, and it is what the REPL echoes and what containers show for the items inside them.
+
+```python
+import datetime
+d = datetime.date(2026, 7, 27)
+print(str(d))      # 2026-07-27
+print(repr(d))     # datetime.date(2026, 7, 27)
+
+s = "a\nb"
+print(str(s))      # a
+                   # b
+print(repr(s))     # 'a\nb'   quotes and escapes made visible
+```
+
+Reach for `repr` when debugging — it is the difference between a value that looks like an empty string and one you can see is `'   '`.
+
+**Two smaller ones worth knowing.** `callable` reports whether an object can be invoked, which is how generic code tells a function from a value. `ord` and `chr` convert between a character and its Unicode code point.
+
+```python
+print(callable(len), callable(42))   # True False
+print(ord("A"), chr(97))             # 65 a
+```
+
+**Where the rest are covered**
+
+| Function | Purpose | Covered in |
+| :--- | :--- | :--- |
+| `print`, `input` | console I/O | 2 |
+| `id` | object identity | 4 |
+| `abs`, `round`, `pow`, `divmod` | numeric helpers | 5 |
+| `sorted`, `reversed` | new sorted / reversed sequence | 7 |
+| `int`, `str`, `list`, `dict` and friends | conversion and empty containers | 12 |
+| `type`, `isinstance`, `dir`, `help` | type checks and inspection | 12 |
+| `range`, `enumerate`, `zip` | loop helpers | 16 |
+| `map`, `filter` | transform and select, lazily | 21 |
+| `iter`, `next` | the iterator protocol | 23 |
+| `open` | file access, normally through `with` | 31 |
+
+**Notes:**
+- `len` is O(1) on built-in containers because they store their size. It raises `TypeError` on generators and other lazy iterators, which have no length until consumed.
+- `sum` refuses strings deliberately. Use `"".join(parts)`, which is linear rather than quadratic.
+- `min` and `max` raise `ValueError` on an empty iterable unless you pass `default=`.
+- `all([])` is `True` and `any([])` is `False`. Vacuous truth, and a reliable interview trap.
+- Pair `any` and `all` with a generator expression, not a list comprehension, so the short-circuit actually saves work.
+- `print` uses `str` while the REPL and containers use `repr`. When output is ambiguous, print the `repr`.
+
+---
+
+## 14. Operators
 
 Operators group into a few families. Most are obvious — the ones worth dwelling on are identity vs equality, the membership operators, and the walrus.
 
@@ -835,7 +955,7 @@ print(bin(flags))                             # 0b110
 print(bool(flags & READ), bool(flags & EXEC)) # True False   test whether a flag is set
 ```
 
-Those three symbols are heavily overloaded: `&`, `|`, and `^` are bit operations on integers, set algebra on sets (Section 9), and `|` additionally merges dictionaries (Section 10). Same operator, completely different meaning per type — which is exactly what `__and__` and friends from Section 27 make possible.
+Those three symbols are heavily overloaded: `&`, `|`, and `^` are bit operations on integers, set algebra on sets (Section 9), and `|` additionally merges dictionaries (Section 10). Same operator, completely different meaning per type — which is exactly what `__and__` and friends from Section 28 make possible.
 
 **Augmented assignment:** every binary operator has a compound form that reads the name, applies the operator, and stores the result back under the same name. There are thirteen of them, one for each binary operator:
 
@@ -859,7 +979,7 @@ nums += [3]
 print(id(nums) == before) # True    lists mutate in place via __iadd__
 ```
 
-That difference is invisible until a second name shares the object, which is where Section 33 picks the thread up. It also produces one of Python's strangest error messages. Augmented assignment on a tuple element mutates the list *and then* fails to store it back:
+That difference is invisible until a second name shares the object, which is where Section 34 picks the thread up. It also produces one of Python's strangest error messages. Augmented assignment on a tuple element mutates the list *and then* fails to store it back:
 
 ```python
 t = ([1, 2], "x")
@@ -895,7 +1015,7 @@ Operators have a **precedence** order (`**` binds tightest, then unary minus, th
 
 ---
 
-## 14. Conditionals and Pattern Matching
+## 15. Conditionals and Pattern Matching
 
 The `if` / `elif` / `else` chain is the basic branch. Python uses indentation, not braces, to mark the block, and the colon is required.
 
@@ -973,7 +1093,7 @@ print(handlers["add"](2, 3))   # 5
 
 ---
 
-## 15. Loops
+## 16. Loops
 
 Python has two loops: `for` iterates over the items of any iterable, and `while` repeats as long as a condition holds. The `for` loop is by far the more common — because it works directly on the thing you want to traverse rather than on an index.
 
@@ -1056,7 +1176,7 @@ print("liftoff")
 
 ---
 
-## 16. Comprehensions
+## 17. Comprehensions
 
 A comprehension builds a collection from an iterable in a single, declarative expression. It is one of Python's signature features and a near-certain interview topic. The list form reads as `[expression for item in iterable if condition]`.
 
@@ -1116,7 +1236,7 @@ total = sum(x for x in range(10**6) if x % 2 == 0)
 
 ---
 
-## 17. Defining and Calling Functions
+## 18. Defining and Calling Functions
 
 A function packages reusable logic behind a name. You define it with `def`, give it parameters, and optionally `return` a value. A function with no explicit `return` returns `None`.
 
@@ -1156,7 +1276,22 @@ print(Circle.area.__doc__)   # Return the circle's area.
 help(Circle)                 # prints the class, its docstring, and its methods
 ```
 
-Functions are **first-class objects** — you can assign them to variables, store them in lists or dicts, pass them as arguments, and return them from other functions. This is the foundation for the functional tools and decorators later in this block.
+Functions are **first-class objects** — you can assign them to variables, store them in lists or dicts, pass them as arguments, and return them from other functions. A `def` statement does two separate things: it builds a function object, and it binds a name to that object, exactly the way `x = 5` builds an integer and binds a name to it. Because the name and the object are separate, writing the name without parentheses hands you the function itself instead of calling it.
+
+```python
+def shout(text):
+    return text.upper() + "!"
+
+f = shout                       # no parentheses: bind the object, do not call it
+print(f("hello"))               # HELLO!
+print(shout.__name__)           # shout   the object carries its own metadata
+
+actions = {"loud": shout, "quiet": str.lower}
+print(actions["loud"]("hey"))   # HEY!
+print(actions["quiet"]("HEY"))  # hey
+```
+
+The parentheses are the entire distinction: `f = shout` stores the function to call later, while `f = shout("hi")` calls it now and stores the string it returned. A dict of functions like `actions` is the Pythonic replacement for a long `if`/`elif` chain that dispatches on a string, and it is the same mechanism that lets `sorted(data, key=str.lower)` take behavior as an argument. This is the foundation for the functional tools and decorators later in this block.
 
 ```python
 def shout(text): return text.upper()
@@ -1188,7 +1323,7 @@ print(low, high, avg)      # 2 6 4.0
 
 ---
 
-## 18. Parameters and Arguments
+## 19. Parameters and Arguments
 
 Parameters are the names in the definition; arguments are the values you pass. Python's calling convention is rich, and the ordering rules are a frequent interview question.
 
@@ -1275,7 +1410,7 @@ print(append_to(2))    # [2]   fresh list every call
 
 ---
 
-## 19. Scope: LEGB, global, nonlocal
+## 20. Scope: LEGB, global, nonlocal
 
 When you use a name, Python searches four scopes in a fixed order, summarized by the acronym **LEGB**: **L**ocal (inside the current function), **E**nclosing (any outer function wrapping this one), **G**lobal (the module's top level), and **B**uilt-in (names like `len` and `print`). The first match wins.
 
@@ -1335,7 +1470,7 @@ In everyday code you rarely need `global` — reaching for it usually signals th
 
 ---
 
-## 20. Lambdas and Functional Tools
+## 21. Lambdas and Functional Tools
 
 A **lambda** is a small anonymous function written inline as `lambda args: expression`. Its body is a single expression whose value is returned automatically. Lambdas exist for the throwaway case where naming a function with `def` would be overkill — most often as a `key` argument.
 
@@ -1389,7 +1524,7 @@ print(sorted(people, key=itemgetter("age")))   # sorted by the age key
 
 ---
 
-## 21. Closures and Decorators
+## 22. Closures and Decorators
 
 A **closure** is a nested function that remembers values from the scope where it was defined, even after that outer scope has returned — the inner function "closes over" those variables. This is what lets a function carry private state without a class.
 
@@ -1463,7 +1598,7 @@ Decorators can also take arguments, which requires one more layer of nesting (a 
 
 ---
 
-## 22. Iterators and Generators
+## 23. Iterators and Generators
 
 This section explains the machinery behind every `for` loop and is one of the highest-value interview topics, because it connects iteration, laziness, and memory.
 
@@ -1537,7 +1672,7 @@ print(list(g))         # []   already exhausted
 
 ---
 
-## 23. Classes and Instances
+## 24. Classes and Instances
 
 A class is a blueprint for creating objects that bundle **data** (attributes) and **behavior** (methods) together. An instance is one object built from that blueprint. Object-oriented programming is the bulk of many interviews, so the vocabulary here matters.
 
@@ -1585,7 +1720,7 @@ A subtle trap: assigning to `instance.attr` always creates or updates an *instan
 
 ---
 
-## 24. Methods: Instance, Class, Static
+## 25. Methods: Instance, Class, Static
 
 A class can hold three kinds of methods, distinguished by what (if anything) they receive automatically and what they operate on.
 
@@ -1638,7 +1773,7 @@ Choosing between them: if the method uses the object's data, it is an instance m
 
 ---
 
-## 25. Inheritance and the MRO
+## 26. Inheritance and the MRO
 
 Inheritance lets a class reuse and extend another. The new class (subclass/child) gets the attributes and methods of the existing one (superclass/parent) and can add to or override them. This models an "is-a" relationship — a `Dog` is an `Animal`.
 
@@ -1764,7 +1899,7 @@ class Z(X, Y): pass
 
 ---
 
-## 26. Encapsulation and Properties
+## 27. Encapsulation and Properties
 
 Encapsulation is the practice of controlling access to an object's internal data. Python has no truly private attributes; instead it relies on **naming conventions** and offers **properties** for controlled access. This honesty (everything is technically reachable) is itself an interview talking point.
 
@@ -1822,7 +1957,7 @@ Properties are the Pythonic alternative to Java-style `get_x()` / `set_x()` meth
 
 ---
 
-## 27. Dunder Methods
+## 28. Dunder Methods
 
 Dunder ("double underscore") methods, also called magic or special methods, let your objects plug into Python's built-in syntax and functions. Defining `__len__` makes `len(obj)` work; defining `__eq__` makes `==` work; defining `__add__` makes `+` work. This is how operator overloading and Pythonic objects are built.
 
@@ -1890,7 +2025,7 @@ If you define `__eq__`, you usually must also define `__hash__` (or the class be
 
 ---
 
-## 28. Dataclasses
+## 29. Dataclasses
 
 Writing `__init__`, `__repr__`, and `__eq__` by hand for a class that is mostly a bundle of fields is tedious and error-prone — the `@dataclass` decorator (Python 3.7+, in the standard library) generates all of that from type-annotated field declarations, removing the boilerplate.
 
@@ -1908,7 +2043,7 @@ print(p == Point(1, 2))  # True            __eq__ generated
 print(p.x, p.y)        # 1 2
 ```
 
-Fields can have defaults, and mutable defaults must use `field(default_factory=...)` to avoid the shared-default trap from Section 18. Passing `order=True` generates the comparison methods so instances sort, and `frozen=True` makes instances immutable (and hashable).
+Fields can have defaults, and mutable defaults must use `field(default_factory=...)` to avoid the shared-default trap from Section 19. Passing `order=True` generates the comparison methods so instances sort, and `frozen=True` makes instances immutable (and hashable).
 
 ```python
 from dataclasses import dataclass, field
@@ -1944,7 +2079,7 @@ Dataclasses are the modern default for "plain data holder" classes — configura
 
 ---
 
-## 29. Errors and Exceptions
+## 30. Errors and Exceptions
 
 When something goes wrong, Python raises an **exception** — an object describing the error that propagates up the call stack until something handles it or the program crashes. Handling exceptions is how you write robust code, and the `try` / `except` mechanics are interview staples.
 
@@ -2036,7 +2171,7 @@ except* TypeError as eg:
 # TypeError branch: ['bad type']
 ```
 
-This is not a corner case you can skip: `asyncio.TaskGroup` (Section 35) reports failures exactly this way, so a task group with two failing tasks raises an `ExceptionGroup` rather than either individual error. One restriction is worth remembering — a single `try` must commit to one style, because mixing `except` and `except*` on the same block is a `SyntaxError`.
+This is not a corner case you can skip: `asyncio.TaskGroup` (Section 36) reports failures exactly this way, so a task group with two failing tasks raises an `ExceptionGroup` rather than either individual error. One restriction is worth remembering — a single `try` must commit to one style, because mixing `except` and `except*` on the same block is a `SyntaxError`.
 
 **`assert` states an invariant, it does not validate input.** The statement `assert condition, message` raises `AssertionError` when the condition is falsy and does nothing otherwise. It records an assumption you believe is always true — a check on your own logic rather than on the outside world:
 
@@ -2064,7 +2199,7 @@ The detail interviewers reach for: assertions are **removed entirely** when Pyth
 
 ---
 
-## 30. Files and Context Managers
+## 31. Files and Context Managers
 
 Reading and writing files uses the built-in `open`, which returns a file object. The right way to use it is the `with` statement, a **context manager** that guarantees the file is closed even if an error occurs midway. Forgetting to close files leaks resources — `with` removes that risk entirely.
 
@@ -2138,7 +2273,7 @@ print(p.suffix)                    # .txt
 
 ---
 
-## 31. Modules, Packages, and the Standard Library
+## 32. Modules, Packages, and the Standard Library
 
 A **module** is a single `.py` file of reusable code — a **package** is a folder of modules. The `import` statement loads them so you can use their names. This is covered in depth in the companion project-anatomy guide, so here the focus is the standard library, the large set of modules that ship with Python and that interviewers expect you to reach for.
 
@@ -2216,7 +2351,7 @@ print(back["name"])                    # Ada
 
 ---
 
-## 32. Type Hints
+## 33. Type Hints
 
 Type hints (PEP 484, Python 3.5+) annotate the expected types of variables, parameters, and return values. They are **optional and not enforced at runtime** — Python ignores them when executing. Their value is for human readers, editors (autocomplete and inline errors), and static checkers like `mypy` or `pyright` that catch type bugs before the program runs.
 
@@ -2296,7 +2431,7 @@ Type hints shine in larger codebases and at team boundaries — a well-typed fun
 
 ---
 
-## 33. Mutability, Identity, and Copying
+## 34. Mutability, Identity, and Copying
 
 This section gathers the reference-and-mutability ideas introduced in Section 4 into the three places they cause real bugs and real interview questions: function arguments, copying, and augmented assignment. Everything here follows from one fact: assignment binds a name to an object and never copies.
 
@@ -2331,7 +2466,7 @@ print(num)                 # 5    the caller's int is unchanged
 
 There is no second mechanism at work: the list example mutates a shared object and the int example rebinds a local name, but both follow the one rule that the parameter is bound to the same object the caller passed. Some texts call this model **call by sharing**.
 
-This is also why mutable default arguments are dangerous (Section 18) and why returning a new value is often safer than mutating an argument in place.
+This is also why mutable default arguments are dangerous (Section 19) and why returning a new value is often safer than mutating an argument in place.
 
 **Copying: shallow vs deep.** Assignment makes an alias, not a copy — to get an independent object you copy explicitly. A **shallow copy** duplicates the outer container but shares the nested objects inside it — a **deep copy** recursively duplicates everything. For a flat list of immutables the distinction does not matter, but for nested structures it is the difference between safety and a surprise.
 
@@ -2382,7 +2517,7 @@ print(1000 == 1000)    # True, the correct way to compare
 
 ---
 
-## 34. How Python Executes: CPython, Bytecode, the GIL
+## 35. How Python Executes: CPython, Bytecode, the GIL
 
 Interviewers often probe whether you understand what happens beneath the syntax. The key facts are the bytecode compile step, reference-counting memory management, and the Global Interpreter Lock.
 
@@ -2439,7 +2574,7 @@ A major recent change: **Python 3.13 introduced an experimental free-threaded bu
 
 ---
 
-## 35. Async and Await
+## 36. Async and Await
 
 Threads and processes are not Python's only concurrency story. `async`/`await` provides **cooperative concurrency**: one thread, one event loop, and coroutines that voluntarily hand control back whenever they would otherwise sit idle waiting on a socket or a disk. Nothing runs in parallel, yet thousands of waits overlap, which is why `asyncio` handles far more simultaneous connections than a thread pool of the same size.
 
@@ -2530,13 +2665,13 @@ The second most common is blocking the loop. `time.sleep`, a synchronous HTTP cl
 **Notes:**
 - `async def` creates a coroutine function; calling it returns a coroutine object and runs nothing. Only `await`, `asyncio.run`, or a task actually executes the body.
 - `await` is legal only inside an `async def`. In a normal function it is `SyntaxError: 'await' outside async function`; at module level the message is `'await' outside function`.
-- Async is I/O-bound concurrency, not CPU-bound parallelism. The GIL is beside the point here because only one thread exists; Section 34 has the decision table.
-- `asyncio.gather` collects results; `asyncio.TaskGroup` (3.11+) also cancels siblings when one task fails and reports the failures as an `ExceptionGroup` (Section 29). Prefer the task group in new code.
+- Async is I/O-bound concurrency, not CPU-bound parallelism. The GIL is beside the point here because only one thread exists; Section 35 has the decision table.
+- `asyncio.gather` collects results; `asyncio.TaskGroup` (3.11+) also cancels siblings when one task fails and reports the failures as an `ExceptionGroup` (Section 30). Prefer the task group in new code.
 - Never call a blocking function inside a coroutine. Wrap it with `asyncio.to_thread` so the event loop stays responsive.
 
 ---
 
-## 36. Memory, Iteration, and Performance Habits
+## 37. Memory, Iteration, and Performance Habits
 
 A handful of habits separate code that scales from code that does not, and they make good interview talking points because each has a clear "why".
 
@@ -2589,7 +2724,7 @@ print(round(t, 4), "seconds for 10k runs")
 
 ---
 
-## 37. Common Mistakes
+## 38. Common Mistakes
 
 **Using `is` to compare values.** `is` checks identity, not equality. `if x is 5` only works by accident through small-integer caching. Use `==` for values and reserve `is` for `None` and singletons.
 
@@ -2623,7 +2758,7 @@ print(round(t, 4), "seconds for 10k runs")
 
 ---
 
-## 38. Interview Quick-Fire
+## 39. Interview Quick-Fire
 
 Short, high-frequency questions with the answers an interviewer expects.
 
@@ -2661,7 +2796,7 @@ Short, high-frequency questions with the answers an interviewer expects.
 
 ---
 
-## 39. Cheat Sheet
+## 40. Cheat Sheet
 
 **Built-in data types**
 
@@ -2745,8 +2880,10 @@ Short, high-frequency questions with the answers an interviewer expects.
 | `any`, `all` | boolean reductions |
 | `range` | lazy integer sequence |
 | `type`, `isinstance` | runtime type inspection |
+| `dir`, `help` | explore an unfamiliar object |
 | `abs`, `round`, `pow`, `divmod` | numeric helpers |
 | `open` | file access (use with `with`) |
+| `repr` | unambiguous debug string form |
 | `print`, `input` | console I/O |
 
 **Error handling**
@@ -2776,7 +2913,7 @@ finally:
 
 ---
 
-## 40. Keyword Reference
+## 41. Keyword Reference
 
 Python reserves **35 keywords** that can never be used as identifiers, plus four **soft keywords** that are contextual: they act as keywords only in particular positions and stay usable as ordinary names everywhere else. `keyword.kwlist`, `keyword.softkwlist`, and `keyword.iskeyword("if")` expose all of this at runtime.
 
@@ -2792,72 +2929,72 @@ Python reserves **35 keywords** that can never be used as identifiers, plus four
 
 | Keyword | What it does | Covered in |
 | :--- | :--- | :--- |
-| `and` | short-circuit conjunction; returns an operand, not a bool | 11, 13 |
-| `or` | short-circuit disjunction; returns an operand, not a bool | 11, 13 |
-| `not` | logical negation; also half of `is not` and `not in` | 13 |
-| `is` | identity comparison (same object), never value equality | 13, 33 |
-| `in` | membership test, and the separator in a `for` header | 13, 15 |
+| `and` | short-circuit conjunction; returns an operand, not a bool | 11, 14 |
+| `or` | short-circuit disjunction; returns an operand, not a bool | 11, 14 |
+| `not` | logical negation; also half of `is not` and `not in` | 14 |
+| `is` | identity comparison (same object), never value equality | 14, 34 |
+| `in` | membership test, and the separator in a `for` header | 14, 16 |
 
 **Conditionals and pattern matching**
 
 | Keyword | What it does | Covered in |
 | :--- | :--- | :--- |
-| `if` | conditional branch | 14 |
-| `elif` | chained alternative branch | 14 |
-| `else` | fallback branch; also used on loops and on `try` | 14, 15, 29 |
-| `match` | *soft*: structural pattern matching (3.10+) | 14 |
-| `case` | *soft*: one pattern arm inside `match` | 14 |
-| `_` | *soft*: the wildcard pattern inside `match` | 14 |
+| `if` | conditional branch | 15 |
+| `elif` | chained alternative branch | 15 |
+| `else` | fallback branch; also used on loops and on `try` | 15, 16, 30 |
+| `match` | *soft*: structural pattern matching (3.10+) | 15 |
+| `case` | *soft*: one pattern arm inside `match` | 15 |
+| `_` | *soft*: the wildcard pattern inside `match` | 15 |
 
 **Loops**
 
 | Keyword | What it does | Covered in |
 | :--- | :--- | :--- |
-| `for` | iterate over an iterable | 15 |
-| `while` | loop while a condition stays truthy | 15 |
-| `break` | exit the innermost loop immediately | 15 |
-| `continue` | skip to the next iteration of the innermost loop | 15 |
+| `for` | iterate over an iterable | 16 |
+| `while` | loop while a condition stays truthy | 16 |
+| `break` | exit the innermost loop immediately | 16 |
+| `continue` | skip to the next iteration of the innermost loop | 16 |
 
 **Functions**
 
 | Keyword | What it does | Covered in |
 | :--- | :--- | :--- |
-| `def` | define a function or method | 17 |
-| `return` | end a function and hand back a value | 17 |
-| `lambda` | build a small anonymous function expression | 20 |
-| `yield` | produce a value from a generator and suspend | 22 |
-| `pass` | do nothing; a syntactic placeholder | 17 |
+| `def` | define a function or method | 18 |
+| `return` | end a function and hand back a value | 18 |
+| `lambda` | build a small anonymous function expression | 21 |
+| `yield` | produce a value from a generator and suspend | 23 |
+| `pass` | do nothing; a syntactic placeholder | 18 |
 
 **Names and namespaces**
 
 | Keyword | What it does | Covered in |
 | :--- | :--- | :--- |
-| `global` | rebind a module-level name from inside a function | 19 |
-| `nonlocal` | rebind a name in the nearest enclosing function | 19 |
+| `global` | rebind a module-level name from inside a function | 20 |
+| `nonlocal` | rebind a name in the nearest enclosing function | 20 |
 | `del` | unbind a name, or delete an item from a container | 4 |
-| `class` | define a class | 23 |
-| `import` | load a module | 31 |
-| `from` | select names out of a module; also `raise ... from ...` | 29, 31 |
-| `as` | bind a result to a name in `with`, `except`, and `import` | 29, 30, 31 |
-| `type` | *soft*: declare a type alias (3.12+) | 32 |
+| `class` | define a class | 24 |
+| `import` | load a module | 32 |
+| `from` | select names out of a module; also `raise ... from ...` | 30, 32 |
+| `as` | bind a result to a name in `with`, `except`, and `import` | 30, 31, 32 |
+| `type` | *soft*: declare a type alias (3.12+) | 33 |
 
 **Errors and cleanup**
 
 | Keyword | What it does | Covered in |
 | :--- | :--- | :--- |
-| `try` | begin a protected block | 29 |
-| `except` | handle a matching exception | 29 |
-| `finally` | run cleanup whether or not an exception occurred | 29 |
-| `raise` | signal an exception yourself | 29 |
-| `assert` | check an invariant; stripped under `python -O` | 29 |
-| `with` | run a block inside a context manager | 30 |
+| `try` | begin a protected block | 30 |
+| `except` | handle a matching exception | 30 |
+| `finally` | run cleanup whether or not an exception occurred | 30 |
+| `raise` | signal an exception yourself | 30 |
+| `assert` | check an invariant; stripped under `python -O` | 30 |
+| `with` | run a block inside a context manager | 31 |
 
 **Asynchronous code**
 
 | Keyword | What it does | Covered in |
 | :--- | :--- | :--- |
-| `async` | mark a coroutine function, `async with`, or `async for` | 35 |
-| `await` | suspend a coroutine until an awaitable completes | 35 |
+| `async` | mark a coroutine function, `async with`, or `async for` | 36 |
+| `await` | suspend a coroutine until an awaitable completes | 36 |
 
 **The keywords that wear more than one hat.** Five of them do genuinely different jobs depending on where they appear, and that is where most of the confusion lives.
 
