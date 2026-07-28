@@ -79,7 +79,7 @@ Before any project exists, four things live on the machine independently of any 
 
 Rather than memorising these, ask: `uv python dir`, `uv cache dir`, and `uv tool dir` print the current locations, and each is overridable through an environment variable.
 
-These persist across every project. Nothing done inside a project alters them, with one exception — adding a brand new package downloads a copy into the shared cache so future projects can reuse it instantly.
+These persist across every project. Nothing done inside a project alters them, with two exceptions, and both only ever add: a package the machine has never seen is downloaded into the shared cache, and a Python version it does not have is downloaded into the shared interpreter store. Future projects then reuse both instantly.
 
 The base interpreter stays pristine. You never install project packages directly into it. Each project gets its own isolated space instead, which is what the rest of this guide builds.
 
@@ -202,6 +202,8 @@ uv python pin 3.12
 
 The same deferral applies here as at init time. `uv python pin` records a *request*; it does not install anything. If 3.12 is absent from the machine, the pin still succeeds and the download happens on the next command that needs a working interpreter, which is normally `uv sync`. Section 14 goes through this in detail.
 
+Then commit `.python-version`, because uv will not do that part for you. A pin is worth exactly as much as its reach, and one sitting untracked in your working directory reaches a single machine. Section 11 shows what a clone does when the file is missing, and why the failure is quiet rather than loud.
+
 If you keep landing on a version you did not want across many new projects, set a machine-wide fallback once instead of correcting each project:
 
 ```bash
@@ -218,7 +220,7 @@ The rules above decide which version you *get*. They say nothing about which one
 
 - **Match whatever will actually run the code.** If the project deploys to a container, a CI runner, or a cluster sitting on 3.11, develop on 3.11. A version that exists only on your laptop produces bugs that appear exactly once, in production. This constraint outranks everything below it.
 - **Otherwise take the latest stable release**, unless a dependency stops you. Newer minors are faster and better supported, and in a project you control there is no cost to being current.
-- **Expect the scientific and machine-learning stack to lag.** Compiled libraries ship a separate binary wheel per Python version, and a new minor release routinely waits months for the whole chain to catch up. Until those wheels exist, installing either falls back to a slow build from source or fails outright. If the project leans on that ecosystem, one minor version behind the newest is the low-friction default.
+- **Expect the scientific and machine-learning stack to lag.** Compiled libraries ship a separate binary wheel per Python version, and a new minor release routinely waits months for the whole chain to catch up. Until those wheels exist, installing either falls back to a slow build from source or fails outright. If the project leans on that ecosystem, one minor version behind the newest is the low-friction default. Section 14 covers how to check a package's supported range, and what to do when you only discover the problem after the project is already on the wrong version.
 - **Set `requires-python` to what you support, not what you run.** For an application the floor barely matters, since nothing else consumes it. For a library it is a promise — `>=3.13` on a package that would work fine on 3.10 excludes users for no reason. Choose the lowest version you are willing to test against.
 - **Never pin a patch version.** `3.12` means any `3.12.x`, which is what you want: security fixes arrive without any action from you. `3.12.7` freezes the project on one build and buys nothing.
 
@@ -335,7 +337,7 @@ code .
 
 Open the command palette (`Ctrl+Shift+P`), run **Python: Select Interpreter**, and choose the entry whose path contains `.venv` — it is usually labeled with the project's folder name and marked "Recommended".
 
-Once selected, the editor uses that interpreter everywhere: the Run button, the integrated terminal, and any notebook kernel. The currently selected interpreter appears in the bottom-right status bar, and clicking it reopens the same picker.
+Once selected, the editor uses that interpreter everywhere: the Run button, the integrated terminal, and any notebook kernel. With a Python file open, the selected interpreter appears in the status bar on the right, and clicking it reopens the same picker. With no Python file active the indicator is simply absent, which is not a sign that the selection was lost.
 
 This is what makes the editor immune to "which Python is it using?" confusion. Because the interpreter is named directly per project, terminal aliases and system PATH quirks cannot interfere.
 
@@ -702,7 +704,7 @@ Two one-directional rules make the separation safe:
 - Deleting from a **project** never affects the **cache** or the installed **interpreters**.
 - Clearing the **cache** never affects an existing project's already-built `.venv`. That environment's hard-links keep its own package files alive independently of the cached originals.
 
-The interpreter is the one place this symmetry breaks, and it follows from Section 8: a `.venv` holds a *pointer* to the base installation rather than a copy of it. Uninstalling a Python version therefore does break every environment built on it — the launcher resolves to something that is no longer there. Nothing durable is lost, since `uv sync` re-downloads the version and rebuilds, but it is the one removal that costs more than disk space.
+There is one exception to the second rule, and it follows from Section 8: a `.venv` holds a *pointer* to the base installation rather than a copy of it. Uninstalling a Python version therefore does break every environment built on it — the launcher resolves to something that is no longer there. Nothing durable is lost, since `uv sync` re-downloads the version and rebuilds, but it is the one removal that costs more than disk space.
 
 **Notes:**
 - A project's whole lifecycle follows from this table: initialize, add what you need, select the interpreter, build and run, commit the durable files. The `.venv` can be discarded at any point.
@@ -869,14 +871,14 @@ uv python install 3.12              # install a version explicitly
 
 Explicit installation is rarely necessary, since any command that needs a missing version downloads it. It is worth doing when you want the download to happen now rather than in the middle of something else — before boarding a flight, say.
 
-This is also the place to be precise about what `uv python pin` does, because the two commands are easy to conflate. `uv python pin 3.12` writes `3.12` into `.python-version` and checks the request against `requires-python`, and that is the whole of it. It does not download an interpreter, it does not rebuild `.venv`, and it does not touch `pyproject.toml`. If 3.12 is not installed, the pin still succeeds and nothing else happens until the next command that needs a real interpreter, at which point uv downloads it. The clean sequence for switching a project's Python is therefore:
+This is also the place to be precise about what `uv python pin` does, because the two commands are easy to conflate. `uv python pin 3.12` writes `3.12` into `.python-version` and checks the request against `requires-python`, and that is the whole of it. It does not download an interpreter, it does not rebuild `.venv`, and it does not touch `pyproject.toml`. If 3.12 is not installed, the pin still succeeds and nothing else happens until the next command that needs a real interpreter, at which point uv downloads it. So moving a project to a version `requires-python` already permits takes two commands:
 
 ```bash
 uv python pin 3.12    # record the decision
 uv sync               # acquire the interpreter if needed, rebuild .venv against it
 ```
 
-If `requires-python` still says `>=3.14`, uv will not accept the pin quietly — it errors, or warns and then fails at the next `uv sync`, so a version change usually means editing that bound too. This is the one legitimate reason to hand-edit `pyproject.toml` during a version change, and the edit is why the `uv sync` above is doing real work rather than repeating itself.
+Read that as the *within-range* case only. It works when the version you want already satisfies `requires-python`, which in practice means moving upward inside an open-ended floor. Moving below the floor is a different procedure, covered under "When a dependency does not support your Python" at the end of this section, because doing these two commands in this order will simply fail.
 
 Patch versions have a subtlety of their own. A pin of `3.12` is a request for any `3.12.x`, and uv will not fetch a newer patch on its own. When you do upgrade, existing environments follow without being rebuilt:
 
@@ -888,6 +890,54 @@ uv python upgrade         # every uv-managed version
 Treat this one as provisional. uv's documentation still marks patch upgrading as a *preview* feature, meaning the behavior is experimental and may change, so verify it against the docs before building a routine around it. As currently implemented, uv keeps each managed interpreter behind a minor-version directory that points at the current patch, so an environment built on `3.12` starts using `3.12.11` transparently. The exception is an environment created against an explicit patch, such as `uv venv --python 3.10.8`, which stays exactly where it was put. Minor versions never upgrade this way — moving from 3.12 to 3.13 can change dependency resolution, so uv makes you ask for it.
 
 Deleting a project does not remove the version it used. The interpreter lives outside the project, so it stays installed and ready — exactly like the cache. Section 16 covers removing versions you no longer want.
+
+### When a dependency does not support your Python
+
+The common reason to change a project's Python is not preference. It is discovering that something you need has not been built for the version you are on. Compiled libraries, and the machine-learning stack especially, ship a separate binary wheel per Python version and routinely trail the newest release by one or two minors.
+
+**Finding out before you commit.** Four places answer the question, in rough order of reliability:
+
+| Where to look | What it tells you |
+| :--- | :--- |
+| The package's `Requires: Python` field on its PyPI page | the authoritative constraint, taken straight from package metadata |
+| The wheel filenames under "Download files" | `cp312` means a CPython 3.12 binary exists; no `cp314` file means no 3.14 binary |
+| The `Programming Language :: Python :: 3.x` classifiers | a hand-maintained hint, and sometimes stale, so treat it as weaker evidence |
+| `uv add <package>` | the fastest check of all, because uv resolves against your actual interpreter and tells you |
+
+**What the failure looks like.** The last of those is worth recognizing on sight. uv reports an unsatisfiable resolution rather than a plain install error, and the message reads roughly like this:
+
+```text
+× No solution found when resolving dependencies:
+  ╰─▶ Because the current Python version (3.14.0) does not satisfy Python>=3.9,<3.13
+      and somepackage==2.18.0 depends on Python>=3.9,<3.13, we can conclude that
+      somepackage==2.18.0 cannot be used.
+      And because only somepackage==2.18.0 is available and your project depends on
+      somepackage, we can conclude that your project's requirements are unsatisfiable.
+```
+
+These messages read backwards from the conclusion, so start at the last line and work up. The phrase to look for is *the current Python version does not satisfy*: that identifies this as a Python-version problem rather than a conflict between two packages, and the bound printed next to it is the range you have to move into.
+
+**Correcting it, in the order that works.** Say the project sits on 3.14 and the library needs below 3.13. Three steps, and the order is forced:
+
+```bash
+# 1. lower the floor by hand, in pyproject.toml
+#    requires-python = ">=3.12"
+
+# 2. only now will the pin be accepted
+uv python pin 3.12
+
+# 3. re-resolve against the new interpreter and rebuild
+uv sync
+```
+
+Step 1 cannot be skipped or moved later. uv validates every pin against `requires-python`, so while the floor still reads `>=3.14` a pin of `3.12` contradicts the recipe and is refused. Attempting the pin first is the natural instinct and it produces a confusing rejection, since the error is about a file you were not editing.
+
+Step 3 is doing real work here, unlike the no-op `uv sync` warned about in Section 17. The lockfile was resolved under the old floor, and the environment was built on the old interpreter, so both are genuinely stale. `uv sync` re-resolves and rebuilds against 3.12, which is also the point at which the previously unsatisfiable dependency resolves and installs.
+
+**Three things that go with the fix:**
+- Lowering `requires-python` widens what resolution accepts, so other packages may resolve to older releases than before. That is correct behavior rather than a regression: the lockfile now describes what genuinely works on 3.12.
+- If you want to stop a future upgrade from silently reintroducing the problem, an upper bound expresses the real constraint: `requires-python = ">=3.12,<3.14"`. Reasonable for an application. For a published library, prefer leaving the ceiling off, since an upper bound propagates to everyone who depends on you.
+- Check the dependency's supported range before choosing the floor, not after. Picking 3.13 because it is merely newer than 3.12 wastes a full cycle if the library stops at 3.12.
 
 **Notes:**
 - Other tools list interpreters too, and they share the shim problem shown above: `python`, `python3`, and a "latest patch" alias can all be one install. Count distinct versions wherever you are reading.
@@ -1128,6 +1178,8 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 
 **Assuming `uv init` picked the newest Python.** Newest wins only among uv-managed interpreters. Falling back to system Python, uv takes the first compatible one on `PATH`, so a system `python3` of 3.10 beats a 3.13 sitting further down the path. Pass `uv init --python 3.12` whenever the version matters.
 
+**Pinning a lower Python before lowering `requires-python`.** uv checks every pin against the recipe, so a pin below the floor is refused and the error points at a file you were not editing. Edit `requires-python` first, then pin, then sync (Section 14).
+
 **Expecting `uv python pin` to install the interpreter.** It writes `.python-version` and validates the request, nothing more. The download happens on the next command that needs a real interpreter, so follow a pin with `uv sync` if you want the environment on the new version now.
 
 **Running `uv sync` immediately after `uv add`.** `uv add` already resolves, locks, and installs. The trailing sync is a no-op that makes the pair look like two required steps. Save `uv sync` for when something changed outside a uv command.
@@ -1178,6 +1230,9 @@ If you are exporting for a deploy target today, `requirements.txt` remains the s
 | List installed Python versions only | `uv python list --only-installed` |
 | List every patch release | `uv python list --all-versions` |
 | Install a Python version | `uv python install 3.12` |
+| Move to a version `requires-python` allows | `uv python pin 3.12` then `uv sync` |
+| Move below the `requires-python` floor | edit `requires-python`, then `uv python pin`, then `uv sync` |
+| Check a package's supported Python range | its `Requires: Python` field on PyPI, or just `uv add <package>` |
 | Upgrade to the latest patch | `uv python upgrade 3.12` |
 | Remove an unused Python version | `uv python uninstall 3.12` |
 
