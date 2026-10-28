@@ -30,13 +30,33 @@ Each section ends with a short **Notes** list of the things that trip people up 
 
 To follow along, install PostgreSQL ([Section 3](#3-setup-postgresql-psql-and-clients)), load the script in [Section 4](#4-the-sample-database), and run each query yourself. Typing queries and predicting their output before you run them is the fastest way to learn SQL.
 
+### The essentials path
+
+Fifty-five sections is a reference, not a reading list. For software, Python, data science, and AI engineering roles, read this path in order and run each query yourself:
+
+| Step | Sections | What you come away with |
+| :--- | :--- | :--- |
+| 1 | 1, 3, 4 | what SQL is, a working PostgreSQL, and the sample database |
+| 2 | 5 to 15 | querying one table: the logical clause order, filtering, `NULL` logic, sorting, types, and the everyday functions for text, numbers, and dates |
+| 3 | 16 to 18 | aggregation and grouping, including `FILTER` |
+| 4 | 19 to 23 | keys, every kind of join, and set operations |
+| 5 | 24 to 26 | subqueries and common table expressions, including recursive ones |
+| 6 | 27 to 31 | window functions and the analysis patterns built on them: top-N, deduplication, gaps and islands, pivots, cohorts, retention, and funnels |
+| 7 | 32 to 37 | changing data and designing tables: inserts, updates, deletes, upserts, creating tables, constraints, and normalisation |
+| 8 | 39, 41 | indexes and transactions, the two production topics every role meets |
+| 9 | 46, 47 | SQL from Python: drivers, parameterised queries and injection, ORMs, and pandas |
+| AI engineers | 40, 50 | JSON and full-text search, then ML features, data splits, and vector search |
+| Review | 51 to 53 | Common Mistakes, Interview Quick-Fire, and the Cheat Sheet |
+
+That is about 35,000 words (38,000 with the AI engineer sections): five or six hours of reading, or a few days with the queries. Sections marked *(extra)* in the table of contents cover the wider landscape and the deeper parts of running a database — dialects, views, performance tuning, procedures, security, bulk loading, and warehouses. They can wait. No essential section needs one of them first; where an essential section mentions an extra, it is only a pointer for later.
+
 ---
 
 ## Table of Contents
 
 **Foundations**
 - [1. What Databases and SQL Are](#1-what-databases-and-sql-are)
-- [2. The SQL Landscape: Dialects, Engines, and When to Use Which](#2-the-sql-landscape-dialects-engines-and-when-to-use-which)
+- [2. The SQL Landscape: Dialects, Engines, and When to Use Which](#2-the-sql-landscape-dialects-engines-and-when-to-use-which) *(extra)*
 - [3. Setup: PostgreSQL, psql, and Clients](#3-setup-postgresql-psql-and-clients)
 - [4. The Sample Database](#4-the-sample-database)
 - [5. How a Query Runs: Written Order vs Logical Order](#5-how-a-query-runs-written-order-vs-logical-order)
@@ -86,30 +106,30 @@ To follow along, install PostgreSQL ([Section 3](#3-setup-postgresql-psql-and-cl
 - [35. Creating and Altering Tables](#35-creating-and-altering-tables)
 - [36. Constraints and Referential Integrity](#36-constraints-and-referential-integrity)
 - [37. Normalization and Schema Design](#37-normalization-and-schema-design)
-- [38. Views and Materialized Views](#38-views-and-materialized-views)
+- [38. Views and Materialized Views](#38-views-and-materialized-views) *(extra)*
 - [39. Indexes](#39-indexes)
 - [40. JSON, Arrays, and Full-Text Search](#40-json-arrays-and-full-text-search)
 
 **Production SQL**
 - [41. Transactions, Isolation, and Locking](#41-transactions-isolation-and-locking)
-- [42. Query Plans and Performance](#42-query-plans-and-performance)
-- [43. Functions, Procedures, and Triggers](#43-functions-procedures-and-triggers)
-- [44. Roles, Permissions, and Row-Level Security](#44-roles-permissions-and-row-level-security)
-- [45. Import, Export, and Backup](#45-import-export-and-backup)
+- [42. Query Plans and Performance](#42-query-plans-and-performance) *(extra)*
+- [43. Functions, Procedures, and Triggers](#43-functions-procedures-and-triggers) *(extra)*
+- [44. Roles, Permissions, and Row-Level Security](#44-roles-permissions-and-row-level-security) *(extra)*
+- [45. Import, Export, and Backup](#45-import-export-and-backup) *(extra)*
 
 **SQL in the Data and AI Stack**
 - [46. SQL from Python: Drivers, Parameters, and Injection](#46-sql-from-python-drivers-parameters-and-injection)
 - [47. ORMs, SQLAlchemy, and pandas](#47-orms-sqlalchemy-and-pandas)
-- [48. Data Engineering: Warehouses, Star Schemas, and Pipelines](#48-data-engineering-warehouses-star-schemas-and-pipelines)
-- [49. Analytical Engines: DuckDB and Cloud Warehouses](#49-analytical-engines-duckdb-and-cloud-warehouses)
+- [48. Data Engineering: Warehouses, Star Schemas, and Pipelines](#48-data-engineering-warehouses-star-schemas-and-pipelines) *(extra)*
+- [49. Analytical Engines: DuckDB and Cloud Warehouses](#49-analytical-engines-duckdb-and-cloud-warehouses) *(extra)*
 - [50. SQL for Machine Learning and AI: Features, Splits, and Vector Search](#50-sql-for-machine-learning-and-ai-features-splits-and-vector-search)
 
 **Reference**
 - [51. Common Mistakes](#51-common-mistakes)
 - [52. Interview Quick-Fire](#52-interview-quick-fire)
 - [53. Cheat Sheet](#53-cheat-sheet)
-- [54. Dialect Translation Table](#54-dialect-translation-table)
-- [55. Keyword Reference](#55-keyword-reference)
+- [54. Dialect Translation Table](#54-dialect-translation-table) *(reference)*
+- [55. Keyword Reference](#55-keyword-reference) *(reference)*
 
 ---
 

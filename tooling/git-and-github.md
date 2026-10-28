@@ -33,6 +33,23 @@ One idea runs through the whole guide, and it is worth holding onto from the sta
 
 The examples follow a small Python service called `sentiment-api`, owned by the GitHub user `octocat`. Substitute your own names throughout.
 
+### The essentials path
+
+If your aim is to be productive in a software, Python, data science, or AI engineering role, you do not need all 34 sections at once. Read these in order, run the commands as you go, and you will have everything those roles expect day to day:
+
+| Step | Sections | What you come away with |
+| :--- | :--- | :--- |
+| 1 | 1 to 4 | the mental model, a configured Git, and a working connection to GitHub |
+| 2 | 5 to 11 | the daily loop: creating repositories, committing, ignoring files, syncing, and reading history |
+| 3 | 12 to 18 | branches, merging, conflicts, rebasing, stashing, and how to undo anything |
+| 4 | 19 to 21 | pull requests, code review, and how teams protect `main` |
+| 5 | 23 | handling data, model files, notebooks, and secrets |
+| 6 | 24 to 26 | CI with GitHub Actions, and making it a required check |
+| 7 | 30 | one feature from issue to production, tying everything together |
+| Review | 32 to 34 | Common Mistakes, Interview Quick-Fire, and the Cheat Sheet |
+
+That is about 14,000 words: two to three hours of reading, or a weekend with the hands-on practice. Sections marked *(extra)* in the table of contents cover releases, workflow security, deployment, Dependabot, and a few specialist commands. They can wait until a project needs them — no essential section needs one of them first, and where an essential section mentions an extra, it is only a pointer for later.
+
 ---
 
 ## Table of Contents
@@ -67,7 +84,7 @@ The examples follow a small Python service called `sentiment-api`, owned by the 
 - [19. Pull Requests from Start to Finish](#19-pull-requests-from-start-to-finish)
 - [20. Reviewing Code](#20-reviewing-code)
 - [21. Team Workflows and Branch Rules](#21-team-workflows-and-branch-rules)
-- [22. Issues, Tags, and Releases](#22-issues-tags-and-releases)
+- [22. Issues, Tags, and Releases](#22-issues-tags-and-releases) *(extra)*
 
 **Data and AI Projects**
 - [23. Large Files, Datasets, Notebooks, and Secrets](#23-large-files-datasets-notebooks-and-secrets)
@@ -76,13 +93,13 @@ The examples follow a small Python service called `sentiment-api`, owned by the 
 - [24. How GitHub Actions Works](#24-how-github-actions-works)
 - [25. Your First CI Workflow for a Python Project](#25-your-first-ci-workflow-for-a-python-project)
 - [26. Making CI a Gate: Required Checks](#26-making-ci-a-gate-required-checks)
-- [27. Secrets, Permissions, and Workflow Security](#27-secrets-permissions-and-workflow-security)
-- [28. Continuous Deployment and Releases](#28-continuous-deployment-and-releases)
-- [29. Keeping Dependencies Current with Dependabot](#29-keeping-dependencies-current-with-dependabot)
+- [27. Secrets, Permissions, and Workflow Security](#27-secrets-permissions-and-workflow-security) *(extra)*
+- [28. Continuous Deployment and Releases](#28-continuous-deployment-and-releases) *(extra)*
+- [29. Keeping Dependencies Current with Dependabot](#29-keeping-dependencies-current-with-dependabot) *(extra)*
 
 **Putting It Together**
 - [30. One Feature from Issue to Production](#30-one-feature-from-issue-to-production)
-- [31. Useful Extras: cherry-pick, bisect, worktree](#31-useful-extras-cherry-pick-bisect-worktree)
+- [31. Useful Extras: cherry-pick, bisect, worktree](#31-useful-extras-cherry-pick-bisect-worktree) *(extra)*
 
 **Reference**
 - [32. Common Mistakes](#32-common-mistakes)
