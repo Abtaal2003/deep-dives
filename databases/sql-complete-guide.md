@@ -2,7 +2,7 @@
 
 A thorough, zero-to-professional tour of SQL: what relational databases are, how every major clause works, how to combine tables, how to analyze data with window functions, how to design schemas that stay correct, and how SQL is actually used in production by application developers, analysts, data scientists, data engineers, and AI engineers. Every concept is paired with a query against one small sample database and the real output that query produces, so nothing is left abstract.
 
-The examples target **PostgreSQL**, the most standards-faithful open-source database and the default choice for new projects. Every query in this guide was executed on PostgreSQL 16, and the outputs shown are the real results. Everything works on 16, 17, and 18 (18 is the current stable series, with 19 in beta as of September 2026), though `EXPLAIN` plans and timings will look slightly different on other versions and machines. Where another database spells something differently, that is flagged inline, and [Section 54](#54-dialect-translation-table) collects the differences in one table.
+The examples target **PostgreSQL**, the most standards-faithful open-source database and the default choice for new projects. Every query in this guide was executed on PostgreSQL 16, and the outputs shown are the real results. Everything works on 16, 17, and 18 (18 is the current stable series; 19 reached its release candidate in October 2026 and is scheduled for 19 November 2026), though `EXPLAIN` plans and timings will look slightly different on other versions and machines. Where another database spells something differently, that is flagged inline, and [Section 54](#54-dialect-translation-table) collects the differences in one table.
 
 **Sources:**
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/current/) — the authoritative reference for every statement and function used here
@@ -638,7 +638,7 @@ Referenced by:
 
 **Notes:**
 - `NULL` in these outputs is how this guide displays missing values (set with `\pset null NULL` in `psql`). By default `psql` shows them as blank, which is easy to confuse with an empty string.
-- `ordered_at` is a `timestamptz` (timestamp with time zone) and the session time zone is UTC, hence the `+00` suffix. [Section 14](#14-dates-times-and-intervals) explains why this is the right type for event times.
+- `ordered_at` is a `timestamptz` (timestamp with time zone) and the session time zone is UTC, hence the `+00` suffix. Your `psql` uses your computer's time zone instead, so run `SET timezone = 'UTC';` at the start of a session to match the outputs exactly. [Section 14](#14-dates-times-and-intervals) explains why this is the right type for event times.
 - `order_items.unit_price` deliberately differs from `products.price` for order 1: the Laptop Pro 14 cost 1,199.00 in January and 1,299.00 later. Storing the price at the time of sale is a real-world design rule, covered in [Section 37](#37-normalization-and-schema-design).
 - Every section of this guide starts from this exact data. When a section changes rows, the next section starts fresh.
 
@@ -4792,6 +4792,13 @@ Here four customers generate over 80 percent of revenue.
 ## 32. INSERT
 
 `INSERT` adds rows to a table. Always name the columns you are filling — it documents intent, and it keeps working when someone adds or reorders columns.
+
+From this section on, the examples change the data. Each section's outputs assume a freshly loaded sample database, so if you are following along, reload it at the start of every section. Otherwise new IDs, counts, and totals drift away from what is shown:
+
+```bash
+psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS shop" -c "CREATE DATABASE shop"
+psql -h localhost -U postgres -d shop -f shop.sql
+```
 
 ### Single and multiple rows
 
