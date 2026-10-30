@@ -1,19 +1,47 @@
+<div align="center">
+
+<img src="assets/banner.svg" alt="deep-dives: practical reference guides for software, data, and AI engineering" width="100%">
+
 # deep-dives
 
-Practical reference guides for the tools and languages behind software, data, and AI engineering work. Each guide explains how a tool works and why it behaves the way it does, not just which commands to type, and every example shows its real output so you can check your results as you go.
+Practical reference guides for the tools and languages behind software, data, and AI engineering work.<br>
+Each guide explains how a tool works and why it behaves the way it does, not just which commands to type,<br>
+and every example shows its real output so you can check your results as you go.
+
+<img src="https://img.shields.io/badge/guides-7-b11226?style=flat-square&labelColor=0d1117" alt="7 guides">
+<img src="https://img.shields.io/badge/planned-22-b11226?style=flat-square&labelColor=0d1117" alt="22 planned guides">
+<img src="https://img.shields.io/badge/examples-run%20and%20verified-b11226?style=flat-square&labelColor=0d1117" alt="Examples run and verified">
+<img src="https://img.shields.io/github/last-commit/Abtaal2003/deep-dives?style=flat-square&color=b11226&labelColor=0d1117&label=updated" alt="Last updated">
+<img src="https://img.shields.io/badge/license-MIT-b11226?style=flat-square&labelColor=0d1117" alt="MIT license">
+
+<img src="https://img.shields.io/badge/-Python-b11226?style=flat-square&logo=python&logoColor=white&labelColor=0d1117" alt="Python">
+<img src="https://img.shields.io/badge/-uv-b11226?style=flat-square&logo=uv&logoColor=white&labelColor=0d1117" alt="uv">
+<img src="https://img.shields.io/badge/-Git-b11226?style=flat-square&logo=git&logoColor=white&labelColor=0d1117" alt="Git">
+<img src="https://img.shields.io/badge/-GitHub%20Actions-b11226?style=flat-square&logo=githubactions&logoColor=white&labelColor=0d1117" alt="GitHub Actions">
+<img src="https://img.shields.io/badge/-PostgreSQL-b11226?style=flat-square&logo=postgresql&logoColor=white&labelColor=0d1117" alt="PostgreSQL">
+<img src="https://img.shields.io/badge/-Linux-b11226?style=flat-square&logo=linux&logoColor=white&labelColor=0d1117" alt="Linux">
+<img src="https://img.shields.io/badge/-Markdown-b11226?style=flat-square&logo=markdown&logoColor=white&labelColor=0d1117" alt="Markdown">
+
+[Guides](#guides) ·
+[Planned guides](#planned-guides) ·
+[How to use them](#how-to-use-them) ·
+[Accuracy](#accuracy) ·
+[License](#license)
+
+</div>
 
 ---
 
 ## Guides
 
-**Command line and documentation**
+### Command line and documentation
 
 | Guide | What it covers |
 | :--- | :--- |
 | [Terminal and Paths](tooling/terminal-and-paths.md) | Linux and macOS filesystem paths, the everyday commands, and pipes, redirects, and chaining |
 | [Markdown](tooling/markdown.md) | Every Markdown and GitHub Flavored Markdown feature, each shown as source and as rendered output |
 
-**Python**
+### Python
 
 | Guide | What it covers |
 | :--- | :--- |
@@ -21,13 +49,13 @@ Practical reference guides for the tools and languages behind software, data, an
 | [Anatomy of a Python Project](python/python-project-anatomy.md) | Every file and folder in a real project, built the classic way with `venv`, `pip`, and `requirements.txt` |
 | [The uv Project Lifecycle](tooling/uv-project-lifecycle.md) | The modern workflow with uv: every command, the files it generates, and how they fit together |
 
-**Version control**
+### Version control
 
 | Guide | What it covers |
 | :--- | :--- |
 | [Git and GitHub](tooling/git-and-github.md) | The daily workflow, branching and conflicts, pull requests, and CI with GitHub Actions, ending with one feature taken from issue to production |
 
-**Databases**
+### Databases
 
 | Guide | What it covers |
 | :--- | :--- |
@@ -39,7 +67,12 @@ Practical reference guides for the tools and languages behind software, data, an
 
 The collection is growing toward the full skill set of an AI engineer and data scientist. Upcoming guides, roughly in the order they will be added:
 
+<table>
+<tr>
+<td width="50%" valign="top">
+
 **Software engineering foundations**
+
 - Python tooling: testing with pytest, linting and formatting with Ruff, type checking, logging, and pre-commit
 - HTTP, REST APIs, and FastAPI
 - Docker and Docker Compose
@@ -47,7 +80,11 @@ The collection is growing toward the full skill set of an AI engineer and data s
 - AI-assisted development with coding agents
 - Data structures and algorithms in Python
 
+</td>
+<td width="50%" valign="top">
+
 **Building with LLMs**
+
 - Prompt engineering
 - LLM APIs and chatbot systems
 - Tool use and AI agents
@@ -57,17 +94,31 @@ The collection is growing toward the full skill set of an AI engineer and data s
 - The Model Context Protocol (MCP)
 - Evaluating and operating LLM applications
 
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
 **Data science**
+
 - NumPy
 - pandas
 - Data visualization
 - Statistics and A/B testing
 
+</td>
+<td width="50%" valign="top">
+
 **Machine learning**
+
 - Machine learning fundamentals
 - Deep learning
 - NLP and transformers with Hugging Face
 - MLOps
+
+</td>
+</tr>
+</table>
 
 ---
 
@@ -96,3 +147,9 @@ The commands, queries, and code in these guides were run before publishing, and 
 ## License
 
 [MIT](LICENSE)
+
+<div align="center">
+
+<img src="assets/footer.svg" alt="" width="100%">
+
+</div>
