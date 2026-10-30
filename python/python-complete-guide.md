@@ -2,7 +2,7 @@
 
 A thorough, interview-ready tour of the Python language itself: how it runs, every built-in data type and the methods that come with it, control flow, functions, object-oriented programming, errors, modules, concurrency, and the deeper mechanics (identity, mutability, the GIL) that interviewers probe. Every concept is paired with a runnable example and its real output, so nothing is left abstract. The focus is the language, not algorithms: data structures and algorithms get their own companion guide.
 
-The examples target **Python 3.14** (the current stable series, 3.14.6 as of mid-2026), but everything here works on 3.10+ unless a version is called out. Where a feature is newer, that is flagged inline.
+The examples target **Python 3.14** and were verified on it. Python 3.15 was released in October 2026; its one change that affects code in this guide, UTF-8 as the default text encoding, is noted where it matters. Everything here works on 3.10+ unless a version is called out, and where a feature is newer, that is flagged inline.
 
 **Sources:**
 - [The Python Language Reference](https://docs.python.org/3/reference/) — the authoritative specification
@@ -10,8 +10,8 @@ The examples target **Python 3.14** (the current stable series, 3.14.6 as of mid
 - [The Python Tutorial](https://docs.python.org/3/tutorial/) — the official introduction
 - [Built-in Types](https://docs.python.org/3/library/stdtypes.html) — the per-type method tables
 - [PEP 8](https://peps.python.org/pep-0008/) — the style guide
-- [What's New in Python 3.14](https://docs.python.org/3/whatsnew/3.14.html) — the latest release notes
-- [W3Schools Python](https://www.w3schools.com/python/) and [GeeksforGeeks Python](https://www.geeksforgeeks.org/python-programming-language/) — worked examples and references
+- [What's New in Python 3.14](https://docs.python.org/3/whatsnew/3.14.html) — release notes for the version this guide targets
+- [W3Schools Python](https://www.w3schools.com/python/) and [GeeksforGeeks Python](https://www.geeksforgeeks.org/python/python-programming-language-tutorial/) — worked examples and references
 
 ---
 
@@ -2267,7 +2267,7 @@ print(p.suffix)                    # .txt
 **Notes:**
 - Always open files with `with`, so they close automatically even on an exception. Manual `open`/`close` pairs leak file handles when an error skips the `close`.
 - Mode `"w"` truncates the file to empty before writing. Use `"a"` to append, and `"x"` to refuse to overwrite an existing file.
-- Pass `encoding="utf-8"` explicitly for text files. The default encoding is platform-dependent and a frequent source of cross-machine bugs (3.15 will make UTF-8 the default).
+- Pass `encoding="utf-8"` explicitly for text files. The default encoding is platform-dependent and a frequent source of cross-machine bugs (Python 3.15 makes UTF-8 the default, but passing it explicitly keeps your code correct on every version).
 - Iterate a file object directly to stream large files line by line instead of `read()`-ing the whole thing into memory.
 - Use `pathlib.Path` for path work; it replaces fragile `os.path.join` string juggling with a clear, portable API.
 

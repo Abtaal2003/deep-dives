@@ -15,7 +15,7 @@ Every command and output shown here was run against a real repository. Commands 
 - [GitHub Docs: GitHub Actions](https://docs.github.com/en/actions) — workflow syntax, runners, secrets, and security hardening
 - [actions/checkout](https://github.com/actions/checkout) and [astral-sh/setup-uv](https://github.com/astral-sh/setup-uv) — the two actions used in every Python workflow below
 - [uv: Using uv in GitHub Actions](https://docs.astral.sh/uv/guides/integration/github/) and [uv: Dependabot](https://docs.astral.sh/uv/guides/integration/dependabot/)
-- [GitHub Changelog: SHA pinning for actions](https://github.blog/changelog/2025-08-15-github-actions-policy-now-supports-blocking-and-sha-pinning-actions/)
+- [GitHub Changelog: SHA pinning for actions](https://github.blog/changelog/2025-08-15-github-actions-policy-now-supports-blocking-and-sha-pinning-actions/) and [workflow lockfiles](https://github.blog/changelog/2026-10-28-github-actions-workflow-lockfiles-are-generally-available/)
 - [Atlassian Git tutorials](https://www.atlassian.com/git/tutorials) — clear concept explanations; some pages predate `git switch` and `git restore`, so prefer the commands shown here
 - [Learn Git Branching](https://learngitbranching.js.org/) — an interactive visual sandbox for branches and rebasing
 - [Conventional Commits](https://www.conventionalcommits.org/) — a widely used commit message convention
@@ -1801,6 +1801,8 @@ uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
 ```
 
 Actions published by GitHub itself (`actions/*`) are commonly referenced by major tag, as in `actions/checkout@v7`. Security-conscious organisations pin everything to SHAs, and GitHub lets administrators enforce that as a policy.
+
+Since October 2026 there is a second way to get the same guarantee: a **workflow lockfile**. Generated with the `gh actions-lock` extension and committed as `.github/workflows/actions.lock`, it records the exact commit behind every action a workflow uses, including the actions those actions call, so the workflow file can keep readable tags like `@v7` while always running the locked code. Lockfiles are opt-in, Dependabot updates them alongside the tags, and administrators can require them. Like `uv.lock`, a lockfile only freezes what you have — review an action before you lock it.
 
 ### Environments for deployments
 
